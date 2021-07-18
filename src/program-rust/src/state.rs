@@ -7,6 +7,9 @@ use solana_program::clock::UnixTimestamp;
 use solana_program::pubkey::Pubkey;
 use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
+use crate::sdk::types::*;
+use crate::types::*;
+
 /// state version
 #[repr(C)]
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
@@ -23,45 +26,26 @@ impl Default for StateVersion {
     }
 }
 
-/// related to [UnixTimestamp]
-type AppoximateSeconds = i64;
-
-/// must be more than 10000
-// fixed point with one = 1.0000
-type BasisPointsMultiplier = u32;
-
-
-#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
-pub struct RankRequirements {
-    pub minimal_staking_time: AppoximateSeconds,
-    pub multiplifer: BasisPointsMultiplier, 
-}
-
-type MintPubkey = Pubkey;
-type TokenAccountPubKey = Pubkey;
-type SignerPubkey = Pubkey;
-
 /// pool state and rules
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct ViewerSatorStake {
-    /// version
+    pub version : StateVersion,
     pub minimal_staking_time: UnixTimestamp,
-    pub rank_requirements : [RankRequirements; 5],
-    pub mint_sao : MintPubkey,   
+    pub rank_requirements : [RankRequirements; 5],        
+    /// program derived token account used to store summed locked amount
+    pub token_account: TokenAccountPubKey,
     // can initialize state and change rules 
     pub owner : SignerPubkey,   
 }
-
 
 /// lock
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct ViewerSatorLock {
     /// when the amount to be considered locked
-    pub locked_at: UnixTimestamp,
-    /// program derived token account used to store locked amount
-    pub token_account: TokenAccountPubKey,
+    pub locked_at: UnixTimestamp,    
     /// user owner of lock
     pub owner: SignerPubkey,
+    pub amount : TokenAmount,
 }
