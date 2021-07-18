@@ -29,12 +29,10 @@ impl Default for StateVersion {
 /// pool state and rules
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
-pub struct ViewerSatorStake {
+pub struct ViewerStake {
     pub version : StateVersion,
     pub minimal_staking_time: UnixTimestamp,
     pub rank_requirements : [RankRequirements; 5],        
-    /// program derived token account used to store summed locked amount
-    pub token_account: TokenAccountPubKey,
     // can initialize state and change rules 
     pub owner : SignerPubkey,   
 }
