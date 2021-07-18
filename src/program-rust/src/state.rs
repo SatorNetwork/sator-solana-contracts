@@ -40,9 +40,8 @@ pub struct ViewerStake {
 /// lock
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
-pub struct ViewerSatorLock {
-    /// when the amount to be considered locked
-    pub locked_at: UnixTimestamp,    
+pub struct ViewerLock {
+    pub locked_until: UnixTimestamp,    
     /// user owner of lock
     pub owner: SignerPubkey,
     pub amount : TokenAmount,
