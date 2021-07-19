@@ -15,9 +15,9 @@ use crate::{program_id, state, types::*};
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct InitializeStakeInput {
-    pub rank_requirements: RankRequirements,
+    pub rank_requirements: [RankRequirements;5],
     pub minimal_staking_time : ApproximateSeconds,
-    pub mint_sao: MintPubkey,
+    pub mint: MintPubkey,
 }
 
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
@@ -46,7 +46,7 @@ pub enum Instruction
 ///  * `rent`            - *program, implicit* ensure that `token_account` and  `stake` are rent exempt.
 ///  * `spl_token`       - *program, implicit* spl token program to initialize `token_account`.
 ///  * `owner`           - *signer, payer* and owner of `stake`.
-///  * `stake`           - *mutable* not initialized not created account for stake data.
+///  * `stake`           - *mutable, signer* not initialized not created account for stake data.
 ///  * `stake_authority` - *implicit* program derived account from 32 bytes of `owner public key` + `program_id`.
 ///  * `token_account`   - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `stake_authority`.
 /// 
@@ -65,7 +65,7 @@ pub fn initialize_stake(
             AccountMeta::new_readonly(sysvar::rent::id(), false),
             AccountMeta::new_readonly(spl_token::id(), false),
             AccountMeta::new_readonly(*owner, true),
-            AccountMeta::new(*stake, false),
+            AccountMeta::new(*stake, true),
             AccountMeta::new_readonly(stake_authority.0, false),                
             AccountMeta::new(token_account, false),                
         ],

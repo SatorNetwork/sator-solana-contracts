@@ -11,6 +11,12 @@ cargo  build-bpf; cargo fmt --all;cargo clippy --all;cargo test-bpf; cargo doc -
 ```
 
 
+```
+cargo +bpf build --target bpfel-unknown-unknown --release
+cargo +bpf test --target bpfel-unknown-unknown
+```
+
+
 https://nftprojectsboosty.atlassian.net/browse/SAT-225
 
 

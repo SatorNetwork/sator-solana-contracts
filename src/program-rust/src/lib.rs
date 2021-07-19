@@ -1,10 +1,22 @@
 #![feature(trivial_bounds)]
 
 mod state;
-mod entrypoint;
+#[cfg(not(feature = "no-entrypoint"))]
+pub mod entrypoint;
+mod processor;
 mod types;
 mod instruction;
 mod sdk;
+
+//#[cfg(all(feature = "test-bpf", test))]
+#[cfg(all(feature = "test-bpf", test))]
+mod tests;
+
+//#[cfg(any(all(test, target_arch = "bpf"), all(not(test), not(target_arch = "bpf") )))]
+#[cfg(test)]
+//#[cfg(all(feature = "test-bpf", test))]
+mod transactions;
+
 
 use sdk::types::ProgramPubkey;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};

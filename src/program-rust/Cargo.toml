@@ -6,7 +6,10 @@ description = "Solana contract for stacking viewer tokens"
 edition = "2018"
 
 [features]
+default = ["test-bpf"]
+test-bpf = []
 no-entrypoint = []
+
 
 [dependencies]
 borsh = "0.9.1"
@@ -19,7 +22,10 @@ thiserror = "1.0"
 [dev-dependencies]
 solana-program-test = "=1.7.6"
 solana-sdk = "=1.7.6"
+assert_matches = "1.4.0"
+solana-validator = "1.7.6"
+solana-client-helpers = "1.0"
 
 [lib]
-name = "helloworld"
+name = "sator_stake_viewer"
 crate-type = ["cdylib", "lib"]
