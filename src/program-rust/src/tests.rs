@@ -1,4 +1,5 @@
 use borsh::BorshDeserialize;
+use solana_program::native_token::sol_to_lamports;
 use solana_program_test::*;
 use solana_sdk::{
     account::Account,
@@ -47,7 +48,7 @@ async fn flow() {
     let mint = Keypair::new();
     let mut client = program_test.start_with_context().await;
 
-    let transaction = create_initialize_mint(&owner,&mint, &owner.pubkey(), 1000000, 2, client.last_blockhash);
+    let transaction = create_initialize_mint(&owner,&mint, &owner.pubkey(), sol_to_lamports(10.), 2, client.last_blockhash);
 
     client
         .banks_client
