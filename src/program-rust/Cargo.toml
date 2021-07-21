@@ -27,5 +27,7 @@ solana-validator = "1.7.6"
 solana-client-helpers = "1.0"
 
 [lib]
-name = "sator_stake_viewer"
 crate-type = ["cdylib", "lib"]
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]

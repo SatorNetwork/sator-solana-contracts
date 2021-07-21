@@ -19,29 +19,30 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
+    msg!("process_instruction");
     return Ok(());
-    let instruction = Instruction::deserialize_const(instruction_data)?; //BorshDeserializeConst::<Instruction>::deserialize_const(instruction_data)?;
-    match instruction {
-        Instruction::InitializeStake(input) => {
-            msg!("Instruction::InitializeStake");
-            match accounts {
-                [rent, spl_token, owner, stake, stake_authority, token_account, ..] => {
-                    initialize_stake(
-                        program_id,
-                        rent,
-                        spl_token,
-                        owner,
-                        stake,
-                        stake_authority,
-                        token_account,
-                        &input,
-                    )
-                }
-                _ => Err(ProgramError::NotEnoughAccountKeys),
-            }
-        }
-        _ => todo!(),
-    }
+    // let instruction = Instruction::deserialize_const(instruction_data)?; //BorshDeserializeConst::<Instruction>::deserialize_const(instruction_data)?;
+    // match instruction {
+    //     Instruction::InitializeStake(input) => {
+    //         msg!("Instruction::InitializeStake");
+    //         match accounts {
+    //             [rent, spl_token, owner, stake, stake_authority, token_account, ..] => {
+    //                 initialize_stake(
+    //                     program_id,
+    //                     rent,
+    //                     spl_token,
+    //                     owner,
+    //                     stake,
+    //                     stake_authority,
+    //                     token_account,
+    //                     &input,
+    //                 )
+    //             }
+    //             _ => Err(ProgramError::NotEnoughAccountKeys),
+    //         }
+    //     }
+    //     _ => todo!(),
+    // }
 }
 
 fn initialize_stake<'a>(

@@ -16,11 +16,11 @@ use crate::{
 
 pub fn new_program_test() -> ProgramTest {
     let mut program_test = ProgramTest::new(
-        "sator_stake_viewer",
+        "sator_stake_viewer", 
         program_id(),
-        processor!(crate::processor::process_instruction),
+        processor!(process_instruction), 
     );
-    //program_test.add_program("spl_token", spl_token::id(), None);
+    
     program_test
 }
 
@@ -34,7 +34,7 @@ async fn flow() {
     program_test.add_account(
         owner.pubkey(),
         Account {
-            lamports: 10,
+            lamports: 1000000000000,
             ..<_>::default()
         },
     );
@@ -42,7 +42,7 @@ async fn flow() {
     program_test.add_account(
         user.pubkey(),
         Account {
-            lamports: 10,
+            lamports: 1000000000000,
             ..<_>::default()
         },
     );
@@ -85,5 +85,5 @@ async fn flow() {
         .banks_client
         .process_transaction(transaction)
         .await
-        .expect("can initialize stake");
+        .unwrap();
 }

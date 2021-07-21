@@ -24,6 +24,9 @@ pub fn initialize_stake(
         ],
         Some(&owner.pubkey()),
     );
-    transaction.sign(&[owner, &stake], recent_blockhash);
+    transaction.sign(&[
+        owner
+        , &stake
+        ], recent_blockhash);
     (transaction, stake.pubkey())
 }
