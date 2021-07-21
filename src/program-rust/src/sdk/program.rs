@@ -28,7 +28,7 @@ pub trait PubkeyPatterns {
     ) -> Result<(ProgramDerivedPubkey, String), PubkeyError>;
 
     /// Generate certain program address
-    fn find_program_address_from_2_keys<'a>(
+    fn find_program_address_for_pubkeys<'a>(
         a: &Pubkey,
         b: &Pubkey,
         program_id: &ProgramPubkey,
@@ -56,7 +56,7 @@ impl PubkeyPatterns for Pubkey {
         Ok((pubkey, seed))
     }
 
-    fn find_program_address_from_2_keys<'a>(
+    fn find_program_address_for_pubkeys<'a>(
         a: &Pubkey,
         b: &Pubkey,
         program_id: &ProgramPubkey,

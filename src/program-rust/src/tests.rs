@@ -9,10 +9,7 @@ use solana_sdk::{
 };
 use std::mem;
 
-use crate::{
-    instruction::InitializeStakeInput, processor::process_instruction, program_id, state,
-    transactions::initialize_stake, types::RankRequirements,
-};
+use crate::{instruction::InitializeStakeInput, processor::process_instruction, program_id, spl_transactions::create_initialize_mint, state, transactions::initialize_stake, types::RankRequirements};
 
 pub fn new_program_test() -> ProgramTest {
     let mut program_test = ProgramTest::new(
@@ -20,7 +17,7 @@ pub fn new_program_test() -> ProgramTest {
         program_id(),
         processor!(process_instruction), 
     );
-    
+    program_test.add_program("spl_token", spl_token::id(), None);
     program_test
 }
 
@@ -50,6 +47,15 @@ async fn flow() {
     let mint = Keypair::new();
     let mut client = program_test.start_with_context().await;
 
+    let transaction = create_initialize_mint(&owner,&mint, &owner.pubkey(), 1000000, 2, client.last_blockhash);
+
+    client
+        .banks_client
+        .process_transaction(transaction)
+        .await
+        .unwrap();
+        
+        
     let (transaction, stake) = initialize_stake(
         &owner,
         InitializeStakeInput {
@@ -80,7 +86,7 @@ async fn flow() {
         },
         client.last_blockhash,
     );
-
+    
     client
         .banks_client
         .process_transaction(transaction)

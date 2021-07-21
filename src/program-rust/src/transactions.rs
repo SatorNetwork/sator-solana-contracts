@@ -1,4 +1,5 @@
 use borsh::BorshDeserialize;
+use solana_program::system_instruction;
 use solana_program_test::*;
 use solana_sdk::{
     account::Account,
@@ -29,4 +30,31 @@ pub fn initialize_stake(
         , &stake
         ], recent_blockhash);
     (transaction, stake.pubkey())
+}
+
+pub fn create_system_account(
+    payer: &Keypair,
+    account: &Keypair,
+    rent: u64,
+    space: u64,
+    program_id: &Pubkey,
+    recent_blockhash: solana_program::hash::Hash,
+) -> Transaction {
+    let mut transaction = Transaction::new_with_payer(
+        &[system_instruction::create_account(
+            &payer.pubkey(),
+            &account.pubkey(),
+            rent,
+            space,
+            program_id,
+        )],
+        Some(&payer.pubkey()),
+    );
+
+    transaction.sign(
+        &[&payer, account],
+        recent_blockhash,
+    );
+
+    transaction
 }

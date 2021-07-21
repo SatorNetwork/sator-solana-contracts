@@ -19,30 +19,30 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    msg!("process_instruction");
+    msg!("sator_stake_viewer::process_instruction");
     return Ok(());
-    // let instruction = Instruction::deserialize_const(instruction_data)?; //BorshDeserializeConst::<Instruction>::deserialize_const(instruction_data)?;
-    // match instruction {
-    //     Instruction::InitializeStake(input) => {
-    //         msg!("Instruction::InitializeStake");
-    //         match accounts {
-    //             [rent, spl_token, owner, stake, stake_authority, token_account, ..] => {
-    //                 initialize_stake(
-    //                     program_id,
-    //                     rent,
-    //                     spl_token,
-    //                     owner,
-    //                     stake,
-    //                     stake_authority,
-    //                     token_account,
-    //                     &input,
-    //                 )
-    //             }
-    //             _ => Err(ProgramError::NotEnoughAccountKeys),
-    //         }
-    //     }
-    //     _ => todo!(),
-    // }
+    let instruction = Instruction::deserialize_const(instruction_data)?; 
+    match instruction {
+        Instruction::InitializeStake(input) => {
+            msg!("Instruction::InitializeStake");
+            match accounts {
+                [rent, spl_token, owner, stake, stake_authority, token_account, ..] => {
+                    initialize_stake(
+                        program_id,
+                        rent,
+                        spl_token,
+                        owner,
+                        stake,
+                        stake_authority,
+                        token_account,
+                        &input,
+                    )
+                }
+                _ => Err(ProgramError::NotEnoughAccountKeys),
+            }
+        }
+        _ => todo!(),
+    }
 }
 
 fn initialize_stake<'a>(
@@ -55,9 +55,9 @@ fn initialize_stake<'a>(
     token_account: &AccountInfo<'a>,
     input: &crate::instruction::InitializeStakeInput,
 ) -> ProgramResult {
-    //let rent = Rent::from_account_info(rent)?;
-    //let lamports = rent.minimum_balance(ViewerStake::LEN);
-    //invoke::create_account(owner.clone(), stake.clone(), lamports, ViewerStake::LEN as u64, program_id);
+    let rent = Rent::from_account_info(rent)?;
+    let lamports = rent.minimum_balance(ViewerStake::LEN);
+    invoke::create_account(owner.clone(), stake.clone(), lamports, ViewerStake::LEN as u64, program_id)?;
 
     Ok(())
 }

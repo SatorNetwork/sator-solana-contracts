@@ -55,22 +55,22 @@ pub fn initialize_stake(
     stake: &SignerPubkey,
     input: InitializeStakeInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {    
-    // let stake_authority = Pubkey::find_program_address_for_pubkey(owner, &program_id());
-    // let token_account = Pubkey::create_with_seed(
-    //     &stake_authority.0,
-    //     "ViewerStake::token_account",
-    //     &program_id(),
-    // )?;
+    let stake_authority = Pubkey::find_program_address_for_pubkeys(owner, stake, &program_id());
+    let token_account = Pubkey::create_with_seed(
+        &stake_authority.0,
+        "ViewerStake::token_account",
+        &program_id(),
+    )?;
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
         &Instruction::InitializeStake(input),
         vec![
-            //AccountMeta::new_readonly(sysvar::rent::id(), false),
-            //AccountMeta::new_readonly(spl_token::id(), false),
+            AccountMeta::new_readonly(sysvar::rent::id(), false),
+            AccountMeta::new_readonly(spl_token::id(), false),
             AccountMeta::new_readonly(*owner, true),
-            //AccountMeta::new(*stake, true),
-            //AccountMeta::new_readonly(stake_authority.0, false),
-            //AccountMeta::new(token_account, false),
+            AccountMeta::new(*stake, true),
+            AccountMeta::new_readonly(stake_authority.0, false),
+            AccountMeta::new(token_account, false),
         ],
     ))
 }

@@ -36,11 +36,6 @@ pub struct ViewerStake {
     // can initialize state and change rules
     pub owner: SignerPubkey,
 }
-
-impl ViewerStake {
-    pub const LEN: usize = 500;
-}
-
 /// lock
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
@@ -49,4 +44,22 @@ pub struct ViewerLock {
     /// user owner of lock
     pub owner: SignerPubkey,
     pub amount: TokenAmount,
+}
+
+
+
+impl ViewerStake {
+    pub const LEN: usize = 101;
+}
+
+#[cfg(test)]
+mod tests {
+    use borsh::*;
+    use super::ViewerStake;
+
+    #[test]
+    fn test() {
+         let data = ViewerStake::default().try_to_vec().unwrap(); 
+         assert_eq!(data.len(), ViewerStake::LEN);
+    }
 }
