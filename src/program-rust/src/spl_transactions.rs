@@ -1,15 +1,18 @@
-
-
 use borsh::BorshDeserialize;
-use solana_program_test::*;
 use solana_program::{program_pack::Pack, system_instruction};
-use solana_sdk::{account::Account, instruction::{AccountMeta, Instruction}, pubkey::Pubkey, signature::{Keypair, Signer}, transaction::Transaction};
-use std::{mem,};
+use solana_program_test::*;
+use solana_sdk::{
+    account::Account,
+    instruction::{AccountMeta, Instruction},
+    pubkey::Pubkey,
+    signature::{Keypair, Signer},
+    transaction::Transaction,
+};
+use std::mem;
 
 use crate::{instruction::InitializeStakeInput, program_id, state};
 
-
-pub fn create_token_account(    
+pub fn create_token_account(
     account_rent: u64,
     mint: &Pubkey,
     owner: &Keypair,
@@ -34,13 +37,9 @@ pub fn create_token_account(
         .expect("spl initialization parameters are right"),
     ];
 
-    let mut transaction =
-        Transaction::new_with_payer(&instructions, Some(&payer.pubkey()));
+    let mut transaction = Transaction::new_with_payer(&instructions, Some(&payer.pubkey()));
 
-    transaction.sign(
-        &[owner, &token_account, payer],
-        recent_blockhash,
-    );
-    
+    transaction.sign(&[owner, &token_account, payer], recent_blockhash);
+
     (transaction, token_account.pubkey())
 }

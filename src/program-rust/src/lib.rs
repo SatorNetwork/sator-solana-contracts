@@ -1,12 +1,12 @@
 #![feature(trivial_bounds)]
 
-mod state;
 #[cfg(not(feature = "no-entrypoint"))]
 pub mod entrypoint;
-mod processor;
-mod types;
 mod instruction;
+mod processor;
 mod sdk;
+mod state;
+mod types;
 
 #[cfg(all(feature = "test-bpf", test))]
 mod tests;
@@ -19,11 +19,9 @@ mod transactions;
 #[cfg(test)]
 mod spl_transactions;
 
-
 use sdk::types::ProgramPubkey;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 use state::*;
-
 
 solana_program::declare_id!("2ALZgMNre2qynTTyxWtgWG6L2L56n39aBGegS1yvxwya");
 
