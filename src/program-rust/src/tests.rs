@@ -6,13 +6,19 @@ use std::mem;
 use crate::{instruction::InitializeStakeInput, processor::process_instruction, program_id, state, transactions::initialize_stake, types::RankRequirements};
 
 
+pub fn new_program_test() -> ProgramTest {
+    let mut program_test = ProgramTest::new(
+        "sator_stake_viewer",
+        program_id(),
+        processor!(crate::processor::process_instruction),
+    );
+    program_test.add_program("spl_token", spl_token::id(), None);
+    program_test
+}
+
 #[tokio::test]
 async fn flow() {
-    let mut program_test = ProgramTest::new(
-        "sator_stake_viewer", 
-        program_id(),
-        processor!(process_instruction), 
-    );
+    let mut program_test = new_program_test();
     
     let owner = Keypair::new();
     let user = Keypair::new();
@@ -37,7 +43,7 @@ async fn flow() {
     let mut client  = program_test.start_with_context().await;
     
 
-    let transaction = initialize_stake(&owner, InitializeStakeInput {
+    let (transaction, stake) = initialize_stake(&owner, InitializeStakeInput {
         rank_requirements: [
             RankRequirements { minimal_staking_time : 0, multiplier: 1_0000},
             RankRequirements { minimal_staking_time : 2000, multiplier: 2* 1_0000},

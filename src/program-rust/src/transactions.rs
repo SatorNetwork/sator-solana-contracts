@@ -7,8 +7,7 @@ use std::mem;
 
 use crate::{instruction::InitializeStakeInput, program_id, state};
 
-
-pub fn initialize_stake(owner: &Keypair, input: InitializeStakeInput, recent_blockhash: solana_program::hash::Hash) -> Transaction {
+pub fn initialize_stake(owner: &Keypair, input: InitializeStakeInput, recent_blockhash: solana_program::hash::Hash) -> (Transaction, Pubkey) {
     let stake = Keypair::new();
     let mut transaction = Transaction::new_with_payer(
     &[
@@ -21,5 +20,5 @@ pub fn initialize_stake(owner: &Keypair, input: InitializeStakeInput, recent_blo
     Some(&owner.pubkey())
     );
     transaction.sign(&[owner, &stake], recent_blockhash);
-    transaction
+    (transaction, stake.pubkey())
 }

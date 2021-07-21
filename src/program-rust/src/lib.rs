@@ -8,14 +8,16 @@ mod types;
 mod instruction;
 mod sdk;
 
-//#[cfg(all(feature = "test-bpf", test))]
 #[cfg(all(feature = "test-bpf", test))]
 mod tests;
 
 //#[cfg(any(all(test, target_arch = "bpf"), all(not(test), not(target_arch = "bpf") )))]
-#[cfg(test)]
 //#[cfg(all(feature = "test-bpf", test))]
+#[cfg(test)]
 mod transactions;
+
+#[cfg(test)]
+mod spl_transactions;
 
 
 use sdk::types::ProgramPubkey;
