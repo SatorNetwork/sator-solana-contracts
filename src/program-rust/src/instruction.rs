@@ -6,7 +6,7 @@ use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::clock::UnixTimestamp;
 use solana_program::instruction::AccountMeta;
 use solana_program::pubkey::Pubkey;
-use solana_program::sysvar;
+use solana_program::{system_program, sysvar};
 use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
 use crate::sdk::program::PubkeyPatterns;
@@ -16,8 +16,7 @@ use crate::{program_id, state, types::*};
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct InitializeStakeInput {
     pub rank_requirements: [RankRequirements; 5],
-    pub minimal_staking_time: ApproximateSeconds,
-    pub mint: MintPubkey,
+    pub minimal_staking_time: ApproximateSeconds,    
 }
 
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
@@ -42,7 +41,8 @@ pub enum Instruction {
 /// Creates [Instruction::InitializeStake] instruction which initializes `stake` and `token_account`
 ///
 /// Accounts:
-///  * `rent`            - *program, implicit* ensure that `token_account` and  `stake` are rent exempt.
+///  * `system_program`  - *program, implicit* to create accounts
+///  * `sysvar_rent`     - *program, implicit* ensure that `token_account` and  `stake` are rent exempt.
 ///  * `spl_token`       - *program, implicit* spl token program to initialize `token_account`.
 ///  * `owner`           - *signer, payer* and owner of `stake`.
 ///  * `stake`           - *mutable, signer* not initialized not created account for stake data.
@@ -53,24 +53,27 @@ pub enum Instruction {
 pub fn initialize_stake(
     owner: &SignerPubkey,
     stake: &SignerPubkey,
+    mint: &MintPubkey,
     input: InitializeStakeInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {    
-    let stake_authority = Pubkey::find_program_address_for_pubkeys(owner, stake, &program_id());
+    let stake_authority = Pubkey::find_program_address_for_pubkey(stake, &program_id());
     let token_account = Pubkey::create_with_seed(
         &stake_authority.0,
         "ViewerStake::token_account",
-        &program_id(),
+        &spl_token::id(),
     )?;
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
         &Instruction::InitializeStake(input),
         vec![
+            AccountMeta::new_readonly(system_program::id(), false),
             AccountMeta::new_readonly(sysvar::rent::id(), false),
             AccountMeta::new_readonly(spl_token::id(), false),
             AccountMeta::new_readonly(*owner, true),
             AccountMeta::new(*stake, true),
             AccountMeta::new_readonly(stake_authority.0, false),
             AccountMeta::new(token_account, false),
+            AccountMeta::new_readonly(*mint, false),
         ],
     ))
 }

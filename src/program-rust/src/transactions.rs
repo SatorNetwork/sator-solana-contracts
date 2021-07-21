@@ -10,17 +10,18 @@ use solana_sdk::{
 };
 use std::mem;
 
-use crate::{instruction::InitializeStakeInput, program_id, state};
+use crate::{instruction::InitializeStakeInput, program_id, sdk::types::MintPubkey, state};
 
 pub fn initialize_stake(
     owner: &Keypair,
+    mint: &MintPubkey,
     input: InitializeStakeInput,
     recent_blockhash: solana_program::hash::Hash,
 ) -> (Transaction, Pubkey) {
     let stake = Keypair::new();
     let mut transaction = Transaction::new_with_payer(
         &[
-            crate::instruction::initialize_stake(&owner.pubkey(), &stake.pubkey(), input)
+            crate::instruction::initialize_stake(&owner.pubkey(), &stake.pubkey(), mint, input)
                 .expect("could create derived keys"),
         ],
         Some(&owner.pubkey()),

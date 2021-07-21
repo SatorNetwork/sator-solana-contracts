@@ -9,7 +9,7 @@ use solana_program::{
 };
 use spl_token::instruction::initialize_account;
 
-use super::types::ProgramPubkey;
+use super::{program::{AccountPatterns, PubkeyPatterns}, types::{MintPubkey, ProgramPubkey}};
 
 /// Creates system account externally signed
 pub fn create_account<'a>(
@@ -18,6 +18,7 @@ pub fn create_account<'a>(
     required_lamports: u64,
     space: u64,
     owner: &ProgramPubkey,
+    _system_program: &AccountInfo<'a>,
 ) -> ProgramResult {
     invoke(
         &system_instruction::create_account(
@@ -31,14 +32,14 @@ pub fn create_account<'a>(
     )
 }
 
-/// Create account
+
 pub fn create_account_signed<'a>(
     funder: AccountInfo<'a>,
     account_to_create: AccountInfo<'a>,
     required_lamports: u64,
     space: u64,
     owner: &ProgramPubkey,
-    signer_seeds: &[&[u8]],
+    signers_seeds: &[&[&[u8]]],
 ) -> ProgramResult {
     invoke_signed(
         &system_instruction::create_account(
@@ -49,9 +50,42 @@ pub fn create_account_signed<'a>(
             owner,
         ),
         &[funder.clone(), account_to_create.clone()],
-        &[&signer_seeds],
+        signers_seeds,
     )
 }
+
+/// Create account
+#[allow(clippy::too_many_arguments)]
+pub fn create_account_with_seed_signed<'a>(
+    from_account: &AccountInfo<'a>,
+    to_account: &AccountInfo<'a>,
+    base: &AccountInfo<'a>,
+    seed: String,
+    lamports: u64,
+    space: u64,
+    program_owner: &ProgramPubkey,
+    bump_seed: u8,
+    signers_seeds: &[&[&[u8]]],
+) -> ProgramResult {
+    let instruction = &system_instruction::create_account_with_seed(
+        from_account.key,
+        to_account.key,
+        base.key,
+        seed.as_str(),
+        lamports,
+        space,
+        &program_owner.pubkey(),
+    );
+
+    solana_program::program::invoke_signed(
+        instruction,
+        &[from_account.clone(), to_account.clone(), base.clone()],
+        signers_seeds,
+    )
+}
+
+
+
 
 /// Initialize token account
 pub fn initialize_token_account<'a>(
@@ -252,32 +286,25 @@ pub fn create_derived_account<'a>(
     )
 }
 
-/// Create account with seed signed
-#[allow(clippy::too_many_arguments)]
-pub fn create_account_with_seed_signed<'a>(
-    from_account: &AccountInfo<'a>,
-    to_account: &AccountInfo<'a>,
-    base: &AccountInfo<'a>,
-    seed: String,
-    lamports: u64,
-    space: u64,
-    program_owner: &ProgramPubkey,
-    signature: &[&[u8]],
-) -> Result<(), ProgramError> {
-    let instruction = &system_instruction::create_account_with_seed(
-        from_account.key,
-        to_account.key,
-        base.key,
-        seed.as_str(),
-        lamports,
-        space,
-        program_owner,
-    );
-
-    solana_program::program::invoke_signed(
-        instruction,
-        &[from_account.clone(), to_account.clone(), base.clone()],
-        &[&signature[..]],
+/// Initialize
+pub fn initialize_token_account_signed<'a>(
+    token_account: &AccountInfo<'a>,
+    mint: &AccountInfo<'a>,    
+    owner: &AccountInfo<'a>,    
+    rent_account: &AccountInfo<'a>,
+    bump_seed: u8,
+    signers_seeds: &[&[&[u8]]],
+) -> ProgramResult {
+    let instruction = &spl_token::instruction::initialize_account(
+        &spl_token::id(),
+        &token_account.pubkey(),
+        &mint.pubkey(),
+        &owner.pubkey(),        
     )?;
-    Ok(())
+
+    invoke_signed(
+        instruction,
+        &[token_account.clone(), mint.clone(), rent_account.clone(), owner.clone()],
+        signers_seeds,
+    )
 }

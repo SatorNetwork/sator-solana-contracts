@@ -46,8 +46,6 @@ pub struct ViewerLock {
     pub amount: TokenAmount,
 }
 
-
-
 impl ViewerStake {
     pub const LEN: usize = 101;
 }

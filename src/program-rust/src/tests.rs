@@ -9,6 +9,8 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use std::mem;
+use crate::{sdk::program::PubkeyPatterns, state::ViewerStake, test_helpers::*};
+
 
 use crate::{instruction::InitializeStakeInput, processor::process_instruction, program_id, spl_transactions::create_initialize_mint, state, transactions::initialize_stake, types::RankRequirements};
 
@@ -59,6 +61,7 @@ async fn flow() {
         
     let (transaction, stake) = initialize_stake(
         &owner,
+        &mint.pubkey(),
         InitializeStakeInput {
             rank_requirements: [
                 RankRequirements {
@@ -83,7 +86,6 @@ async fn flow() {
                 },
             ],
             minimal_staking_time: 1_000,
-            mint: mint.pubkey(),
         },
         client.last_blockhash,
     );
@@ -93,4 +95,18 @@ async fn flow() {
         .process_transaction(transaction)
         .await
         .unwrap();
+
+        let stake_authority = Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::program_id());
+        let token_account = Pubkey::create_with_seed(
+            &stake_authority.0,
+            "ViewerStake::token_account",
+            &spl_token::id(),
+        ).unwrap();
+
+    let token_account = get_token_account_state(&mut client.banks_client, &token_account).await;
+    assert_eq!(token_account.mint, mint.pubkey());
+    let stake:ViewerStake =  client.banks_client.get_account_data_with_borsh(stake.pubkey()).await.unwrap();
+    
+    assert!(stake.minimal_staking_time > 0);
+    assert!(stake.rank_requirements[4].multiplier > 0);
 }

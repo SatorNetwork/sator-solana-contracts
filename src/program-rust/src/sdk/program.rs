@@ -33,6 +33,9 @@ pub trait PubkeyPatterns {
         b: &Pubkey,
         program_id: &ProgramPubkey,
     ) -> (ProgramDerivedPubkey, u8);
+
+    /// pubkey
+    fn pubkey(&self) -> Pubkey;
 }
 
 impl PubkeyPatterns for Pubkey {
@@ -63,4 +66,71 @@ impl PubkeyPatterns for Pubkey {
     ) -> (ProgramDerivedPubkey, u8) {
         Pubkey::find_program_address(&[&a.to_bytes()[..32], &b.to_bytes()[..32]], program_id)
     }
+
+    fn pubkey(&self) -> Pubkey {
+        *self
+    }
+}
+
+
+pub trait AccountPatterns {
+    /// validate key is equal to other key which assumed to  be derived
+    fn is_derived<'b, K: Into<&'b ProgramPubkey>>(
+        &self,
+        owner: &Pubkey,
+        program_id: K,
+    ) -> Result<u8, ProgramError>;
+    /// public key
+    fn pubkey(&self) -> Pubkey;
+
+    /// checks if program_id owner of self
+    fn is_owner(&self, program_id: &ProgramPubkey) -> ProgramResult;
+
+    /// checks if account is signer
+    fn is_signer(&self) -> ProgramResult;
+}
+
+impl<'a> AccountPatterns for AccountInfo<'a> {
+    fn is_derived<'b, K: Into<&'b ProgramPubkey>>(
+        &self,
+        owner: &Pubkey,
+        program_id: K,
+    ) -> Result<u8, ProgramError> {
+        let (expected_key, seed) = Pubkey::find_program_address_for_pubkey(owner, &program_id.into());
+
+        if *self.key == expected_key {
+            Ok(seed)
+        } else {
+            Err(ProgramError::InvalidSeeds)
+        }
+    }
+
+    fn pubkey(&self) -> Pubkey {
+        *self.key
+    }
+
+    fn is_owner(&self, program_id: &ProgramPubkey) -> ProgramResult {
+        if self.owner != program_id {
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        Ok(())
+    }
+
+    fn is_signer(&self) -> ProgramResult {
+        if !self.is_signer {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+        Ok(())
+    }
+}
+
+
+/// errors if relation is not expected
+pub fn wire(relation: Pubkey, related: &AccountInfo) -> ProgramResult {
+    if relation != related.pubkey() {
+        return Err(ProgramError::InvalidSeeds);
+    }
+
+    Ok(())
 }
