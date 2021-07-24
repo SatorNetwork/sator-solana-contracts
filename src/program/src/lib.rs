@@ -7,6 +7,7 @@ mod processor;
 mod sdk;
 mod state;
 mod types;
+mod error;
 
 #[cfg(all(feature = "test-bpf", test))]
 mod tests;

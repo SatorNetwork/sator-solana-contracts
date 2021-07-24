@@ -1,5 +1,7 @@
 use std::borrow::Borrow;
+use std::error::Error;
 
+use solana_program::clock::Clock;
 use solana_program::msg;
 use solana_program::program_error::{PrintProgramError, ProgramError};
 use solana_program::program_pack::Pack;
@@ -16,7 +18,7 @@ use crate::sdk::{
     borsh::{BorshDeserializeConst, BorshSerializeConst},
     invoke,
 };
-use crate::state::{StateVersion, ViewerStake};
+use crate::state::{StateVersion, ViewerLock, ViewerStake};
 use borsh::{BorshDeserialize, BorshSerialize};
 
 // Program entrypoint's implementation
@@ -126,8 +128,7 @@ fn initialize_stake<'a>(
         bump_seed,
         authority_signature,
     )?;
-
-    let x= stake.try_borrow_data().expect("no borrow issues");
+    
     let mut state = stake.deserialize::<ViewerStake>()?;
     state.minimal_staking_time = input.minimal_staking_time;
     state.rank_requirements = input.rank_requirements.clone();
@@ -148,25 +149,34 @@ fn derive_token_account(stake: &AccountInfo) -> Result<(Pubkey, u8, Pubkey), Pro
     Ok((stake_authority_pubkey, bump_seed, token_account_pubkey))
 }
 
-fn lock(
-    clock: &AccountInfo,
-    spl_token: &AccountInfo,
-    wallet: &AccountInfo,
-    stake: &AccountInfo,
-    stake_authority: &AccountInfo,
-    token_account_source: &AccountInfo,
-    token_account_stake_target: &AccountInfo,
-    lock_account: &AccountInfo,
+fn lock<'a>(
+    clock: &AccountInfo<'a>,
+    spl_token: &AccountInfo<'a>,
+    wallet: &AccountInfo<'a>,
+    stake: &AccountInfo<'a>,
+    stake_authority: &AccountInfo<'a>,
+    token_account_source: &AccountInfo<'a>,
+    token_account_stake_target: &AccountInfo<'a>,
+    lock_account: &AccountInfo<'a>,
     input: crate::instruction::LockInput,
 ) -> ProgramResult {
-    wallet.is_signer()?;
-
     let state = stake.deserialize::<ViewerStake>()?;
-    
+    let clock = Clock::from_account_info(clock)?;
+    if input.duration < state.rank_requirements[0].minimal_staking_time {
+        return crate::error::Error::StakingTimeMustBeMoreThanMinimal.into();
+    }
     let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake)?;
     
     wire(stake_authority_pubkey, stake_authority)?;
     wire(token_account_pubkey, token_account_stake_target)?;
+    let mut lock_state = if stake.data_is_empty() {
+        ViewerLock { amount : input.amount, owner : wallet.pubkey(), locked_until : clock.unix_timestamp + input.duration, version: StateVersion::V1  }
+    }
+    else {
+        stake.deserialize::<ViewerLock>()?
+    };
+
+    invoke::spl_token_transfer(spl_token, token_account_source, token_account_stake_target, wallet, input.amount);
 
     Ok(())
     

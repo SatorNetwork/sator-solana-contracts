@@ -21,9 +21,9 @@ pub struct InitializeStakeInput {
 
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct LockInput {
-    pub lock: TokenAmount,
     /// any of times from [crate::state::ViewerStake::rank_requirements]
     pub duration: ApproximateSeconds,
+    pub amount: TokenAmount,
 }
 
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]

@@ -177,10 +177,11 @@ pub fn token_transfer_program_authority<'a>(
 }
 
 /// Transfer tokens with user transfer authority
-pub fn token_transfer_with_user_authority<'a>(
-    source: AccountInfo<'a>,
-    destination: AccountInfo<'a>,
-    authority: AccountInfo<'a>,
+pub fn spl_token_transfer<'a>(
+    _spl_token_program: &AccountInfo<'a>,
+    source: &AccountInfo<'a>,
+    destination: &AccountInfo<'a>,
+    authority: &AccountInfo<'a>,
     amount: u64,
 ) -> Result<(), ProgramError> {
     let tx = spl_token::instruction::transfer(
@@ -191,7 +192,7 @@ pub fn token_transfer_with_user_authority<'a>(
         &[&authority.key],
         amount,
     )?;
-    invoke(&tx, &[source, destination, authority])
+    invoke(&tx, &[source.clone(), destination.clone(), authority.clone()])
 }
 
 /// Issue a spl_token `MintTo` instruction

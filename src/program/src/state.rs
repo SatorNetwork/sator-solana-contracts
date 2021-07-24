@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-use solana_program::clock::UnixTimestamp;
+use solana_program::clock::{Clock, UnixTimestamp};
 use solana_program::pubkey::Pubkey;
 use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
@@ -40,10 +40,31 @@ pub struct ViewerStake {
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct ViewerLock {
+    pub version: StateVersion,
     pub locked_until: UnixTimestamp,
     /// user owner of lock
     pub owner: SignerPubkey,
     pub amount: TokenAmount,
+}
+
+impl ViewerLock {
+    pub const LEN: usize = 49;
+
+    pub fn uninitialized(&self) -> ProgramResult {
+        if self.version == StateVersion::Uninitialized {
+            Ok(())
+        } else {
+            Err(ProgramError::AccountAlreadyInitialized)
+        }
+    }
+    /// Error if not initialized
+    pub fn initialized(&self) -> ProgramResult {
+        if self.version != StateVersion::Uninitialized {
+            Ok(())
+        } else {
+            Err(ProgramError::UninitializedAccount)
+        }
+    }
 }
 
 impl ViewerStake {
@@ -67,6 +88,8 @@ impl ViewerStake {
 
 #[cfg(test)]
 mod tests {
+    use crate::state::ViewerLock;
+
     use super::ViewerStake;
     use borsh::*;
 
@@ -74,5 +97,7 @@ mod tests {
     fn test() {
         let data = ViewerStake::default().try_to_vec().unwrap();
         assert_eq!(data.len(), ViewerStake::LEN);
+        let data = ViewerLock::default().try_to_vec().unwrap();
+        assert_eq!(data.len(), ViewerLock::LEN);
     }
 }
