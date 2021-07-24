@@ -12,8 +12,10 @@ use solana_program::{
 };
 
 use crate::instruction::Instruction;
+use crate::program_id;
+use crate::sdk::invoke::ProgramPubkeySignature;
 use crate::sdk::program::{wire, AccountPatterns, PubkeyPatterns};
-use crate::sdk::types::ProgramPubkey;
+use crate::sdk::types::{ProgramPubkey, SignerPubkey};
 use crate::sdk::{
     borsh::{BorshDeserializeConst, BorshSerializeConst},
     invoke,
@@ -53,8 +55,10 @@ pub fn process_instruction(
         Instruction::Lock(input) => {
             msg!("Instruction::Lock");
             match accounts {
-                [clock, spl_token, wallet, stake, stake_authority, token_account_source, token_account_stake_target, lock_account, ..] => {
+                [system_program, rent, clock, spl_token, wallet, stake, stake_authority, token_account_source, token_account_stake_target, lock_account, ..] => {
                     lock(
+                        system_program,
+                        rent,
                         clock,
                         spl_token,
                         wallet,
@@ -104,8 +108,7 @@ fn initialize_stake<'a>(
     )?;
     let lamports = rent_state.minimum_balance(spl_token::state::Account::LEN);
 
-    let authority_signature = [&stake.pubkey().to_bytes()[..32], &[bump_seed]];
-    let authority_signature = &[&authority_signature[..]];
+    let authority_signature = ProgramPubkeySignature::new(stake, bump_seed);
 
     invoke::create_account_with_seed_signed(
         system_program,
@@ -117,7 +120,7 @@ fn initialize_stake<'a>(
         spl_token::state::Account::LEN as u64,
         &spl_token::id(),
         bump_seed,
-        authority_signature,
+        &authority_signature,
     )?;
 
     invoke::initialize_token_account_signed(
@@ -126,9 +129,9 @@ fn initialize_stake<'a>(
         &owner,
         rent,
         bump_seed,
-        authority_signature,
+        &authority_signature,
     )?;
-    
+
     let mut state = stake.deserialize::<ViewerStake>()?;
     state.minimal_staking_time = input.minimal_staking_time;
     state.rank_requirements = input.rank_requirements.clone();
@@ -139,17 +142,24 @@ fn initialize_stake<'a>(
 }
 
 fn derive_token_account(stake: &AccountInfo) -> Result<(Pubkey, u8, Pubkey), ProgramError> {
-    let (stake_authority_pubkey, bump_seed) =
-        Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::program_id());
-    let token_account_pubkey = Pubkey::create_with_seed(
+    let (stake_authority_pubkey, bump_seed) = derive_stake_authority_account(stake);
+    let derived = Pubkey::create_with_seed(
         &stake_authority_pubkey,
         "ViewerStake::token_account",
         &spl_token::id(),
     )?;
-    Ok((stake_authority_pubkey, bump_seed, token_account_pubkey))
+    Ok((stake_authority_pubkey, bump_seed, derived))
+}
+
+fn derive_stake_authority_account(stake: &AccountInfo) -> (Pubkey, u8) {
+    let (stake_authority_pubkey, bump_seed) =
+        Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::program_id());
+    (stake_authority_pubkey, bump_seed)
 }
 
 fn lock<'a>(
+    system_program: &AccountInfo<'a>,
+    rent: &AccountInfo<'a>,
     clock: &AccountInfo<'a>,
     spl_token: &AccountInfo<'a>,
     wallet: &AccountInfo<'a>,
@@ -166,18 +176,57 @@ fn lock<'a>(
         return crate::error::Error::StakingTimeMustBeMoreThanMinimal.into();
     }
     let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake)?;
-    
+
+    let (lock_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
+        &stake_authority_pubkey,
+        &wallet.pubkey(),
+        &program_id(),
+    )?;
+
     wire(stake_authority_pubkey, stake_authority)?;
     wire(token_account_pubkey, token_account_stake_target)?;
+    wire(lock_account_pubkey, lock_account)?;
+
+    let authority_signature = ProgramPubkeySignature::new(stake, bump_seed);
+
     let mut lock_state = if stake.data_is_empty() {
-        ViewerLock { amount : input.amount, owner : wallet.pubkey(), locked_until : clock.unix_timestamp + input.duration, version: StateVersion::V1  }
-    }
-    else {
-        stake.deserialize::<ViewerLock>()?
+        let lock_state = ViewerLock {
+            amount: input.amount,
+            owner: wallet.pubkey(),
+            locked_until: clock.unix_timestamp + input.duration,
+            version: StateVersion::V1,
+        };
+        let rent_state = Rent::from_account_info(rent)?;
+        let lamports = rent_state.minimum_balance(ViewerLock::LEN);
+        invoke::create_account_with_seed_signed(
+            system_program,
+            &wallet,
+            &lock_account,
+            stake_authority,
+            seed,
+            lamports,
+            ViewerLock::LEN as u64,
+            &program_id(),
+            bump_seed,
+            &authority_signature,
+        )?;
+        lock_state
+    } else {
+        let mut lock_state = lock_account.deserialize::<ViewerLock>()?;
+        wire(lock_state.owner, wallet)?;
+        lock_state.locked_until = clock.unix_timestamp + input.duration;
+        lock_state.amount += input.amount;
+        lock_state
     };
 
-    invoke::spl_token_transfer(spl_token, token_account_source, token_account_stake_target, wallet, input.amount);
+    invoke::spl_token_transfer(
+        spl_token,
+        token_account_source,
+        token_account_stake_target,
+        wallet,
+        input.amount,
+    );
+    lock_state.serialize_const(&mut *lock_account.try_borrow_mut_data()?)?;
 
     Ok(())
-    
 }

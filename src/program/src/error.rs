@@ -12,8 +12,8 @@ impl Error {
         self.to_u32().unwrap()
     }
 }
- 
-impl Into<ProgramResult> for Error  {
+
+impl Into<ProgramResult> for Error {
     fn into(self) -> ProgramResult {
         Err(ProgramError::Custom(self.to_error_code()))
     }

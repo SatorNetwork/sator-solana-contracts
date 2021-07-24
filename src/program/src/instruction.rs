@@ -82,6 +82,8 @@ pub fn initialize_stake(
 /// If `lock_account` initialized, resets timer.
 ///
 /// Accounts:
+///  * `system_program`             - *program, implicit*
+///  * `sysvar_rent`                - *program, implicit* to create `lock_account` which will be rent except if needed
 ///  * `clock`                      - *program, implicit*
 ///  * `spl_token`                  - *program, implicit*
 ///  * `wallet`                     - *signer, payer*
@@ -89,7 +91,11 @@ pub fn initialize_stake(
 ///  * `stake_authority`            - derived  as in [Instruction::InitializeStake]
 ///  * `token_account_source`       - *mutable*
 ///  * `token_account_stake_target` - *derived, mutable, implicit*
-///  * `lock_account`               - *implicit, derived, mutable* from `stake_authority` and `wallet`
+///  * `lock_account`               - *implicit, derived, mutable* from `wallet` and `stake_authority`
+///
+/// Notes:
+/// - current design does not creates token account to lock tokens, just counts amount in lock.
+/// - lock instruction is same instruction as initialize lock, so it could be made different by having separate lock (it will reduce amount of accounts during lock invocation)
 #[allow(clippy::too_many_arguments)]
 pub fn lock(
     wallet: &SignerPubkey,
@@ -109,6 +115,8 @@ pub fn lock(
         crate::id(),
         &Instruction::Lock(input),
         vec![
+            AccountMeta::new_readonly(system_program::id(), false),
+            AccountMeta::new_readonly(sysvar::rent::id(), false),
             AccountMeta::new_readonly(sysvar::clock::id(), false),
             AccountMeta::new_readonly(spl_token::id(), false),
             AccountMeta::new_readonly(*wallet, true),

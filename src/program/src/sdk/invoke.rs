@@ -56,6 +56,28 @@ pub fn create_account_signed<'a>(
     )
 }
 
+pub struct ProgramPubkeySignature {
+    bytes : [u8; 32],
+    bump_seed : [u8; 1],
+}
+
+impl ProgramPubkeySignature {
+    pub fn new(account: &AccountInfo, bump_seed: u8) -> Self {
+        Self {
+            bytes : account.pubkey().to_bytes(),
+            bump_seed : [bump_seed]
+        }
+    }
+
+    // [&[&[u8]]; 1]
+    // [&[u8], 2]
+    pub fn signature(&self) -> [&[u8]; 2]{
+        [&self.bytes[..32], &self.bump_seed]        
+    }
+}
+
+
+
 /// Create account
 #[allow(clippy::too_many_arguments)]
 pub fn create_account_with_seed_signed<'a>(
@@ -68,7 +90,7 @@ pub fn create_account_with_seed_signed<'a>(
     space: u64,
     program_owner: &ProgramPubkey,
     bump_seed: u8,
-    signers_seeds: &[&[&[u8]]],
+    signers_seeds: &ProgramPubkeySignature,
 ) -> ProgramResult {
     let instruction = &system_instruction::create_account_with_seed(
         from_account.key,
@@ -83,7 +105,7 @@ pub fn create_account_with_seed_signed<'a>(
     solana_program::program::invoke_signed(
         instruction,
         &[from_account.clone(), to_account.clone(), base.clone()],
-        signers_seeds,
+        &[&signers_seeds.signature()[..]],
     )
 }
 
@@ -294,7 +316,7 @@ pub fn initialize_token_account_signed<'a>(
     owner: &AccountInfo<'a>,
     rent_account: &AccountInfo<'a>,
     bump_seed: u8,
-    signers_seeds: &[&[&[u8]]],
+    signers_seeds: &ProgramPubkeySignature,
 ) -> ProgramResult {
     let instruction = &spl_token::instruction::initialize_account(
         &spl_token::id(),
@@ -311,6 +333,6 @@ pub fn initialize_token_account_signed<'a>(
             rent_account.clone(),
             owner.clone(),
         ],
-        signers_seeds,
+        &[&signers_seeds.signature()[..]],
     )
 }
