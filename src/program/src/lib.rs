@@ -8,14 +8,12 @@
 //! - lock accounts and stake token account are derived - operations are signed by on chain stake derived signature
 //!
 pub mod entrypoint;
-#[cfg(not(feature = "no-entrypoint"))]
-pub mod error;
+pub mod errors;
 pub mod instruction;
 mod processor;
 mod sdk;
 pub mod state;
 pub mod types;
-
 #[cfg(all(feature = "test-bpf", test))]
 mod tests;
 

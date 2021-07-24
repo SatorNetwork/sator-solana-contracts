@@ -1,7 +1,4 @@
 //! In program helpers
-
-use std::mem;
-
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::AccountInfo,

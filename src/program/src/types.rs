@@ -8,7 +8,7 @@ use crate::sdk::types::*;
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone, Copy)]
 pub struct Ranks {
     pub minimal_staking_time: ApproximateSeconds,
-    /// Must be more than 10000. Example, 20000 is 2X multiplier
+    /// 5000 is 1.5x multiplier.
     pub multiplier: BasisPointsMultiplier,
     /// amount of token required to reach this rank
     pub amount: TokenAmount,
