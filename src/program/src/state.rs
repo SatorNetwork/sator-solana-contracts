@@ -48,16 +48,31 @@ pub struct ViewerLock {
 
 impl ViewerStake {
     pub const LEN: usize = 101;
+    pub fn uninitialized(&self) -> ProgramResult {
+        if self.version == StateVersion::Uninitialized {
+            Ok(())
+        } else {
+            Err(ProgramError::AccountAlreadyInitialized)
+        }
+    }
+    /// Error if not initialized
+    pub fn initialized(&self) -> ProgramResult {
+        if self.version != StateVersion::Uninitialized {
+            Ok(())
+        } else {
+            Err(ProgramError::UninitializedAccount)
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use borsh::*;
     use super::ViewerStake;
+    use borsh::*;
 
     #[test]
     fn test() {
-         let data = ViewerStake::default().try_to_vec().unwrap(); 
-         assert_eq!(data.len(), ViewerStake::LEN);
+        let data = ViewerStake::default().try_to_vec().unwrap();
+        assert_eq!(data.len(), ViewerStake::LEN);
     }
 }

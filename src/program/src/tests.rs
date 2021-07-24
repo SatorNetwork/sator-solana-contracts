@@ -1,3 +1,4 @@
+use crate::{sdk::program::PubkeyPatterns, state::ViewerStake, test_helpers::*};
 use borsh::BorshDeserialize;
 use solana_program::native_token::sol_to_lamports;
 use solana_program_test::*;
@@ -9,16 +10,18 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use std::mem;
-use crate::{sdk::program::PubkeyPatterns, state::ViewerStake, test_helpers::*};
 
-
-use crate::{instruction::InitializeStakeInput, processor::process_instruction, program_id, spl_transactions::create_initialize_mint, state, transactions::initialize_stake, types::RankRequirements};
+use crate::{
+    instruction::InitializeStakeInput, processor::process_instruction, program_id,
+    spl_transactions::create_initialize_mint, state, transactions::initialize_stake,
+    types::RankRequirements,
+};
 
 pub fn new_program_test() -> ProgramTest {
     let mut program_test = ProgramTest::new(
-        "sator_stake_viewer", 
+        "sator_stake_viewer",
         program_id(),
-        processor!(process_instruction), 
+        processor!(process_instruction),
     );
     program_test.add_program("spl_token", spl_token::id(), None);
     program_test
@@ -50,15 +53,21 @@ async fn flow() {
     let mint = Keypair::new();
     let mut client = program_test.start_with_context().await;
 
-    let transaction = create_initialize_mint(&owner,&mint, &owner.pubkey(), sol_to_lamports(10.), 2, client.last_blockhash);
+    let transaction = create_initialize_mint(
+        &owner,
+        &mint,
+        &owner.pubkey(),
+        sol_to_lamports(10.),
+        2,
+        client.last_blockhash,
+    );
 
     client
         .banks_client
         .process_transaction(transaction)
         .await
         .unwrap();
-        
-        
+
     let (transaction, stake) = initialize_stake(
         &owner,
         &mint.pubkey(),
@@ -89,24 +98,30 @@ async fn flow() {
         },
         client.last_blockhash,
     );
-    
+
     client
         .banks_client
         .process_transaction(transaction)
         .await
         .unwrap();
 
-        let stake_authority = Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::program_id());
-        let token_account = Pubkey::create_with_seed(
-            &stake_authority.0,
-            "ViewerStake::token_account",
-            &spl_token::id(),
-        ).unwrap();
+    let stake_authority =
+        Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::program_id());
+    let token_account = Pubkey::create_with_seed(
+        &stake_authority.0,
+        "ViewerStake::token_account",
+        &spl_token::id(),
+    )
+    .unwrap();
 
     let token_account = get_token_account_state(&mut client.banks_client, &token_account).await;
     assert_eq!(token_account.mint, mint.pubkey());
-    let stake:ViewerStake =  client.banks_client.get_account_data_with_borsh(stake.pubkey()).await.unwrap();
-    
+    let stake: ViewerStake = client
+        .banks_client
+        .get_account_data_with_borsh(stake.pubkey())
+        .await
+        .unwrap();
+
     assert!(stake.minimal_staking_time > 0);
     assert!(stake.rank_requirements[4].multiplier > 0);
 }

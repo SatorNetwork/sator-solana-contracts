@@ -13,7 +13,9 @@ fn process_instruction(
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    if let Err(error) = crate::processor::process_instruction(program_id, accounts, instruction_data) {
+    if let Err(error) =
+        crate::processor::process_instruction(program_id, accounts, instruction_data)
+    {
         msg!("{:?}", error);
         return Err(error);
     }

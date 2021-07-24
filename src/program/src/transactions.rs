@@ -26,10 +26,7 @@ pub fn initialize_stake(
         ],
         Some(&owner.pubkey()),
     );
-    transaction.sign(&[
-        owner
-        , &stake
-        ], recent_blockhash);
+    transaction.sign(&[owner, &stake], recent_blockhash);
     (transaction, stake.pubkey())
 }
 
@@ -52,10 +49,7 @@ pub fn create_system_account(
         Some(&payer.pubkey()),
     );
 
-    transaction.sign(
-        &[&payer, account],
-        recent_blockhash,
-    );
+    transaction.sign(&[&payer, account], recent_blockhash);
 
     transaction
 }

@@ -6,8 +6,8 @@ use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::clock::UnixTimestamp;
 use solana_program::instruction::AccountMeta;
 use solana_program::pubkey::Pubkey;
-use solana_program::{system_program, sysvar};
 use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
+use solana_program::{system_program, sysvar};
 
 use crate::sdk::program::PubkeyPatterns;
 use crate::sdk::types::*;
@@ -16,7 +16,7 @@ use crate::{program_id, state, types::*};
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct InitializeStakeInput {
     pub rank_requirements: [RankRequirements; 5],
-    pub minimal_staking_time: ApproximateSeconds,    
+    pub minimal_staking_time: ApproximateSeconds,
 }
 
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
@@ -46,7 +46,7 @@ pub enum Instruction {
 ///  * `spl_token`       - *program, implicit* spl token program to initialize `token_account`.
 ///  * `owner`           - *signer, payer* and owner of `stake`.
 ///  * `stake`           - *mutable, signer* not initialized not created account for stake data.
-///  * `stake_authority` - *implicit* program derived account from 32 bytes of `owner public key` + `program_id`.
+///  * `stake_authority` - *implicit* program derived account from `32 bytes stake public key` based `program_id`.
 ///  * `token_account`   - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `stake_authority`.
 ///
 #[allow(clippy::too_many_arguments)]
@@ -55,7 +55,7 @@ pub fn initialize_stake(
     stake: &SignerPubkey,
     mint: &MintPubkey,
     input: InitializeStakeInput,
-) -> Result<solana_program::instruction::Instruction, ProgramError> {    
+) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let stake_authority = Pubkey::find_program_address_for_pubkey(stake, &program_id());
     let token_account = Pubkey::create_with_seed(
         &stake_authority.0,

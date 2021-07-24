@@ -72,7 +72,6 @@ impl PubkeyPatterns for Pubkey {
     }
 }
 
-
 pub trait AccountPatterns {
     /// validate key is equal to other key which assumed to  be derived
     fn is_derived<'b, K: Into<&'b ProgramPubkey>>(
@@ -96,7 +95,8 @@ impl<'a> AccountPatterns for AccountInfo<'a> {
         owner: &Pubkey,
         program_id: K,
     ) -> Result<u8, ProgramError> {
-        let (expected_key, seed) = Pubkey::find_program_address_for_pubkey(owner, &program_id.into());
+        let (expected_key, seed) =
+            Pubkey::find_program_address_for_pubkey(owner, &program_id.into());
 
         if *self.key == expected_key {
             Ok(seed)
@@ -124,7 +124,6 @@ impl<'a> AccountPatterns for AccountInfo<'a> {
         Ok(())
     }
 }
-
 
 /// errors if relation is not expected
 pub fn wire(relation: Pubkey, related: &AccountInfo) -> ProgramResult {

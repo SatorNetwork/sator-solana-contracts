@@ -9,7 +9,10 @@ use solana_program::{
 };
 use spl_token::instruction::initialize_account;
 
-use super::{program::{AccountPatterns, PubkeyPatterns}, types::{MintPubkey, ProgramPubkey}};
+use super::{
+    program::{AccountPatterns, PubkeyPatterns},
+    types::{MintPubkey, ProgramPubkey},
+};
 
 /// Creates system account externally signed
 pub fn create_account<'a>(
@@ -31,7 +34,6 @@ pub fn create_account<'a>(
         &[funder.clone(), account_to_create.clone()],
     )
 }
-
 
 pub fn create_account_signed<'a>(
     funder: AccountInfo<'a>,
@@ -83,9 +85,6 @@ pub fn create_account_with_seed_signed<'a>(
         signers_seeds,
     )
 }
-
-
-
 
 /// Initialize token account
 pub fn initialize_token_account<'a>(
@@ -289,8 +288,8 @@ pub fn create_derived_account<'a>(
 /// Initialize
 pub fn initialize_token_account_signed<'a>(
     token_account: &AccountInfo<'a>,
-    mint: &AccountInfo<'a>,    
-    owner: &AccountInfo<'a>,    
+    mint: &AccountInfo<'a>,
+    owner: &AccountInfo<'a>,
     rent_account: &AccountInfo<'a>,
     bump_seed: u8,
     signers_seeds: &[&[&[u8]]],
@@ -299,12 +298,17 @@ pub fn initialize_token_account_signed<'a>(
         &spl_token::id(),
         &token_account.pubkey(),
         &mint.pubkey(),
-        &owner.pubkey(),        
+        &owner.pubkey(),
     )?;
 
     invoke_signed(
         instruction,
-        &[token_account.clone(), mint.clone(), rent_account.clone(), owner.clone()],
+        &[
+            token_account.clone(),
+            mint.clone(),
+            rent_account.clone(),
+            owner.clone(),
+        ],
         signers_seeds,
     )
 }
