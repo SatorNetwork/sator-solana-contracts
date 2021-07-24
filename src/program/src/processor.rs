@@ -144,7 +144,7 @@ fn initialize_stake<'a>(
     invoke::initialize_token_account_signed(
         token_account,
         &mint,
-        &owner,
+        stake_authority,
         rent,
         bump_seed,
         &authority_signature,
@@ -205,7 +205,7 @@ fn lock<'a>(
     is_derived(lock_account_pubkey, lock_account)?;
 
     let authority_signature = ProgramPubkeySignature::new(stake, bump_seed);
-    let lock_state = if lock_account.data_is_empty() {
+    let lock_state = if lock_account.data_is_empty() {        
         let lock_state = ViewerLock {
             amount: input.amount,
             owner: wallet.pubkey(),
@@ -258,7 +258,7 @@ fn unlock<'a>(
     token_account_stake_source: &AccountInfo<'a>,
     lock_account: &AccountInfo<'a>,
 ) -> ProgramResult {
-    let mut lock_state = lock_account.deserialize::<ViewerLock>()?;
+    let lock_state = lock_account.deserialize::<ViewerLock>()?;
     is_derived(lock_state.owner, wallet)?;
     wallet.is_signer()?;
     let clock = Clock::from_account_info(clock)?;
@@ -269,7 +269,7 @@ fn unlock<'a>(
     let (stake_authority_pubkey, bump_seed, token_account_stake_pubkey) = derive_token_account(stake)?;
     is_derived(token_account_stake_pubkey, token_account_stake_source)?;
 
-    let (lock_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
+    let (lock_account_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
         &wallet.pubkey(),
         &program_id(),

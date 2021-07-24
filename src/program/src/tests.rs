@@ -240,7 +240,7 @@ async fn flow() {
             &stake.pubkey(),
             &user_token_account,
             LockInput {
-                amount: 1000,
+                amount: 2000,
                 duration: lock_duration,
             },
             client.last_blockhash,
@@ -264,7 +264,7 @@ async fn flow() {
                 viewer_lock.locked_until - viewer_lock.locked_at,
                 lock_duration
             );
-            //assert_eq!(viewer_lock.amount, 2000);    
+            assert_eq!(viewer_lock.amount, 3000);    
             
         warp_seconds(&mut client, 5 * hour).await;
 

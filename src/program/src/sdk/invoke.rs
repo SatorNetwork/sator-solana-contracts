@@ -206,7 +206,7 @@ pub fn spl_token_transfer<'a>(
         source.key,
         destination.key,
         authority.key,
-        &[&authority.key],
+        &[&authority.pubkey()],
         amount,
     )?;
     invoke(

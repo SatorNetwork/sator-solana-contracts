@@ -33,7 +33,7 @@ use sdk::types::ProgramPubkey;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 use state::*;
 
-solana_program::declare_id!("2ALZgMNre2qynTTyxWtgWG6L2L56n39aBGegS1yvxwya");
+solana_program::declare_id!("CL9tjeJL38C3eWqd6g7iHMnXaJ17tmL2ygkLEHghrj4u");
 
 pub fn program_id() -> ProgramPubkey {
     crate::id()

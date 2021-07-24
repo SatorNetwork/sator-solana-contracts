@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-use solana_program::clock::{Clock, UnixTimestamp};
+use solana_program::clock::{UnixTimestamp};
 use solana_program::pubkey::Pubkey;
 use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 

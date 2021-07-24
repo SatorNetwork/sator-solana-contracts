@@ -1,7 +1,4 @@
 //! Program owned state
-
-use std::time::Duration;
-
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::clock::UnixTimestamp;
 use solana_program::instruction::AccountMeta;
