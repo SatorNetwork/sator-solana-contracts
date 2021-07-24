@@ -28,14 +28,14 @@ pub struct LockInput {
 
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct UnlockInput {
-    pub unlock: TokenAmount,
+    pub amount: TokenAmount,
 }
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub enum Instruction {
     InitializeStake(InitializeStakeInput),
     Lock(LockInput),
-    Unlock(UnlockInput),
+    Unlock,
 }
 
 /// Creates [Instruction::InitializeStake] instruction which initializes `stake` and `token_account`
@@ -130,6 +130,7 @@ pub fn lock(
 }
 
 /// Creates [Instruction::Unlock] instruction which transfer `amount` from `token_account_stake_source` to `token_account_target` if and only if now is more than [ViewerLock::locked_until]
+/// Resets unlock
 ///
 /// Accounts:
 ///  * `clock`                      - *program, implicit*
@@ -146,7 +147,6 @@ pub fn unlock(
     stake: &Pubkey,
     stake_authority: &ProgramDerivedPubkey,
     token_account_target: &TokenAccountPubkey,
-    input: UnlockInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let token_account_stake_source = Pubkey::create_with_seed(
         &stake_authority,
@@ -157,7 +157,7 @@ pub fn unlock(
         Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &program_id())?;
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
-        &Instruction::Unlock(input),
+        &Instruction::Unlock,
         vec![
             AccountMeta::new_readonly(sysvar::clock::id(), false),
             AccountMeta::new_readonly(spl_token::id(), false),

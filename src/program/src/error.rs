@@ -4,7 +4,8 @@ use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
 #[derive(Debug, ToPrimitive)]
 pub enum Error {
-    StakingTimeMustBeMoreThanMinimal,
+    LockStakingTimeMustBeMoreThanMinimal,
+    UnlockCanBeDoneOnlyAfterStakeTimeLapsed,
 }
 
 impl Error {

@@ -21,7 +21,7 @@ pub fn create_account<'a>(
     required_lamports: u64,
     space: u64,
     owner: &ProgramPubkey,
-    _system_program: &AccountInfo<'a>, 
+    _system_program: &AccountInfo<'a>,
 ) -> ProgramResult {
     invoke(
         &system_instruction::create_account(
@@ -57,26 +57,24 @@ pub fn create_account_signed<'a>(
 }
 
 pub struct ProgramPubkeySignature {
-    bytes : [u8; 32],
-    bump_seed : [u8; 1],
+    bytes: [u8; 32],
+    bump_seed: [u8; 1],
 }
 
 impl ProgramPubkeySignature {
     pub fn new(account: &AccountInfo, bump_seed: u8) -> Self {
         Self {
-            bytes : account.pubkey().to_bytes(),
-            bump_seed : [bump_seed]
+            bytes: account.pubkey().to_bytes(),
+            bump_seed: [bump_seed],
         }
     }
 
     // [&[&[u8]]; 1]
     // [&[u8], 2]
-    pub fn signature(&self) -> [&[u8]; 2]{
-        [&self.bytes[..32], &self.bump_seed]        
+    pub fn signature(&self) -> [&[u8]; 2] {
+        [&self.bytes[..32], &self.bump_seed]
     }
 }
-
-
 
 /// Create account
 #[allow(clippy::too_many_arguments)]
@@ -171,18 +169,15 @@ pub fn initialize_mint_signed<'a>(
     )
 }
 
-/// transfer with authority
-pub fn token_transfer_program_authority<'a>(
-    owner: &Pubkey,
-    source: AccountInfo<'a>,
-    destination: AccountInfo<'a>,
-    owner_authority: AccountInfo<'a>,
-    bump_seed: u8,
+/// transfer with on chain authority
+pub fn spl_token_transfer_signed<'a>(
+    _spl_token_program: &AccountInfo<'a>,
+    source: &AccountInfo<'a>,
+    destination: &AccountInfo<'a>,
+    owner_authority: &AccountInfo<'a>,
     amount: u64,
+    signature: &ProgramPubkeySignature,
 ) -> Result<(), ProgramError> {
-    let authority_signature = [&owner.to_bytes()[..32], &[bump_seed]];
-    let authority_signature = &[&authority_signature[..]];
-
     let tx = spl_token::instruction::transfer(
         &spl_token::id(),
         source.key,
@@ -193,8 +188,8 @@ pub fn token_transfer_program_authority<'a>(
     )?;
     invoke_signed(
         &tx,
-        &[source, destination, owner_authority],
-        authority_signature,
+        &[source.clone(), destination.clone(), owner_authority.clone()],
+        &[&signature.signature()[..]],
     )
 }
 
@@ -214,7 +209,10 @@ pub fn spl_token_transfer<'a>(
         &[&authority.key],
         amount,
     )?;
-    invoke(&tx, &[source.clone(), destination.clone(), authority.clone()])
+    invoke(
+        &tx,
+        &[source.clone(), destination.clone(), authority.clone()],
+    )
 }
 
 /// Issue a spl_token `MintTo` instruction

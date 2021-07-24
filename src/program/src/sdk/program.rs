@@ -135,7 +135,7 @@ impl<'a> AccountPatterns for AccountInfo<'a> {
 }
 
 /// errors if relation is not expected
-pub fn wire(relation: Pubkey, related: &AccountInfo) -> ProgramResult {
+pub fn is_derived(relation: Pubkey, related: &AccountInfo) -> ProgramResult {
     if relation != related.pubkey() {
         return Err(ProgramError::InvalidSeeds);
     }
