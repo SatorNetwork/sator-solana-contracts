@@ -20,7 +20,7 @@ mod transactions;
 #[cfg(test)]
 mod spl_transactions;
 #[cfg(test)]
-mod test_helpers;
+mod tests_helpers;
 
 use sdk::types::ProgramPubkey;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};

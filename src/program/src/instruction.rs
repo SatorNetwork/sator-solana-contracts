@@ -99,11 +99,11 @@ pub fn initialize_stake(
 #[allow(clippy::too_many_arguments)]
 pub fn lock(
     wallet: &SignerPubkey,
-    stake: &Pubkey,
-    stake_authority: &ProgramDerivedPubkey,
+    stake: &Pubkey,    
     token_account_source: &TokenAccountPubkey,
     input: LockInput,
-) -> Result<solana_program::instruction::Instruction, ProgramError> {
+) -> Result<(solana_program::instruction::Instruction, Pubkey), ProgramError> {
+    let (stake_authority, _) = Pubkey::find_program_address_for_pubkey(stake, &program_id());
     let token_account_stake_target = Pubkey::create_with_seed(
         &stake_authority,
         "ViewerStake::token_account",
@@ -111,7 +111,7 @@ pub fn lock(
     )?;
     let lock_account =
         Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &program_id())?;
-    Ok(solana_program::instruction::Instruction::new_with_borsh(
+    Ok((solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
         &Instruction::Lock(input),
         vec![
@@ -121,12 +121,14 @@ pub fn lock(
             AccountMeta::new_readonly(spl_token::id(), false),
             AccountMeta::new_readonly(*wallet, true),
             AccountMeta::new_readonly(*stake, false),
-            AccountMeta::new_readonly(*stake_authority, false),
+            AccountMeta::new_readonly(stake_authority, false),
             AccountMeta::new(*token_account_source, false),
             AccountMeta::new(token_account_stake_target, false),
             AccountMeta::new(lock_account.0, false),
-        ],
-    ))
+        ],     
+    ), 
+    lock_account.0)
+)
 }
 
 /// Creates [Instruction::Unlock] instruction which transfer `amount` from `token_account_stake_source` to `token_account_target` if and only if now is more than [ViewerLock::locked_until]

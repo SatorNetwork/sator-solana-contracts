@@ -250,14 +250,14 @@ fn lock<'a>(
 }
 
 fn unlock<'a>(
-    clock: & AccountInfo<'a>,
-    spl_token: & AccountInfo<'a>,
-    wallet: & AccountInfo<'a>,
-    stake: & AccountInfo<'a>,
-    stake_authority: & AccountInfo<'a>,
-    token_account_target: & AccountInfo<'a>,
-    token_account_stake_source: & AccountInfo<'a>,
-    lock_account: & AccountInfo<'a>,
+    clock: &AccountInfo<'a>,
+    spl_token: &AccountInfo<'a>,
+    wallet: &AccountInfo<'a>,
+    stake: &AccountInfo<'a>,
+    stake_authority: &AccountInfo<'a>,
+    token_account_target: &AccountInfo<'a>,
+    token_account_stake_source: &AccountInfo<'a>,
+    lock_account: &AccountInfo<'a>,
 ) -> ProgramResult {
     let mut lock_state = lock_account.deserialize::<ViewerLock>()?;
 
@@ -267,7 +267,7 @@ fn unlock<'a>(
     if lock_state.locked_until < clock.unix_timestamp {
         return crate::error::Error::UnlockCanBeDoneOnlyAfterStakeTimeLapsed.into();
     }
-    
+
     let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake)?;
     is_derived(token_account_pubkey, token_account_stake_source)?;
 

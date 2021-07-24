@@ -10,7 +10,7 @@ use solana_sdk::{
 };
 use std::mem;
 
-use crate::{instruction::InitializeStakeInput, program_id, sdk::types::MintPubkey, state};
+use crate::{instruction::{InitializeStakeInput, LockInput}, program_id, sdk::types::{MintPubkey, TokenAccountPubkey}, state};
 
 pub fn initialize_stake(
     owner: &Keypair,
@@ -29,6 +29,27 @@ pub fn initialize_stake(
     transaction.sign(&[owner, &stake], recent_blockhash);
     (transaction, stake.pubkey())
 }
+
+
+pub fn lock(
+    wallet: &Keypair,
+    stake: &Pubkey, 
+    token_account_source: &TokenAccountPubkey,   
+    input: LockInput,
+    recent_blockhash: solana_program::hash::Hash,
+) -> (Transaction, Pubkey) {
+    let (instruction, lock) = crate::instruction::lock(&wallet.pubkey(), stake, token_account_source, input)
+    .expect("could create derived keys");
+    let mut transaction = Transaction::new_with_payer(
+        &[
+            instruction
+        ],
+        Some(&wallet.pubkey()),
+    );
+    transaction.sign(&[wallet], recent_blockhash);
+    (transaction, lock)
+}
+
 
 pub fn create_system_account(
     payer: &Keypair,

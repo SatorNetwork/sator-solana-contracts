@@ -11,10 +11,12 @@ use solana_sdk::{
 };
 use std::mem;
 
-use crate::{instruction::InitializeStakeInput, program_id, state};
+use crate::{instruction::InitializeStakeInput, program_id, sdk::{program::PubkeyPatterns, types::{Lamports, MintPubkey, TokenAccountPubkey}}, state};
+
+
 
 pub fn create_token_account(
-    account_rent: u64,
+    account_rent: Lamports,
     mint: &Pubkey,
     owner: &Keypair,
     payer: &Keypair,
@@ -77,5 +79,27 @@ pub fn create_initialize_mint(
 
     transaction.sign(&[payer, mint], recent_blockhash);
 
+    transaction
+}
+pub fn mint_to(
+    payer: &Keypair,
+    mint: &MintPubkey,
+    token_account: &TokenAccountPubkey,
+    owner: &Keypair,
+    amount: u64,
+    recent_blockhash: solana_program::hash::Hash,
+) -> Transaction {
+    let instruction = spl_token::instruction::mint_to(
+        &spl_token::id(),
+        &mint.pubkey(),
+        &token_account.pubkey(),
+        &owner.pubkey(),
+        &[],
+        amount,
+    )
+    .unwrap();
+    let mut transaction = Transaction::new_with_payer(&[instruction], Some(&payer.pubkey()));
+
+    transaction.sign(&[payer, owner], recent_blockhash);
     transaction
 }

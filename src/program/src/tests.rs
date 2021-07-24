@@ -1,4 +1,4 @@
-use crate::{sdk::program::PubkeyPatterns, state::ViewerStake, test_helpers::*};
+use crate::{sdk::program::PubkeyPatterns, spl_transactions, state::ViewerStake, tests_helpers::*};
 use borsh::BorshDeserialize;
 use solana_program::native_token::sol_to_lamports;
 use solana_program_test::*;
@@ -37,7 +37,7 @@ async fn flow() {
     program_test.add_account(
         owner.pubkey(),
         Account {
-            lamports: 1000000000000,
+            lamports: 1000000000000000000,
             ..<_>::default()
         },
     );
@@ -45,7 +45,7 @@ async fn flow() {
     program_test.add_account(
         user.pubkey(),
         Account {
-            lamports: 1000000000000,
+            lamports: 100000000000000000,
             ..<_>::default()
         },
     );
@@ -114,8 +114,8 @@ async fn flow() {
     )
     .unwrap();
 
-    let token_account = get_token_account_state(&mut client.banks_client, &token_account).await;
-    assert_eq!(token_account.mint, mint.pubkey());
+    let token_account_state = get_token_account_state(&mut client.banks_client, &token_account).await;
+    assert_eq!(token_account_state.mint, mint.pubkey());
     let stake: ViewerStake = client
         .banks_client
         .get_account_data_with_borsh(stake.pubkey())
@@ -124,4 +124,44 @@ async fn flow() {
 
     assert!(stake.minimal_staking_time > 0);
     assert!(stake.rank_requirements[4].multiplier > 0);
+
+    let transaction = spl_transactions::mint_to(
+        &owner,
+        &mint.pubkey(),
+        &token_account,
+        &owner,
+        10000000000,
+        client.last_blockhash,
+    );
+
+    client
+        .banks_client
+        .process_transaction(transaction)
+        .await
+        .unwrap();
+
+    let (transaction, user_token_account) =spl_transactions::create_token_account(10000000, &mint.pubkey(), &user, &user, client.last_blockhash);  
+    
+    client
+        .banks_client
+        .process_transaction(transaction)
+        .await
+        .unwrap();
+
+    let transaction = spl_transactions::mint_to(
+        &owner,
+        &mint.pubkey(),
+        &token_account,
+        &owner,
+        10000000000,
+        client.last_blockhash,
+    );
+
+    
+    client
+        .banks_client
+        .process_transaction(transaction)
+        .await
+        .unwrap();
+
 }
