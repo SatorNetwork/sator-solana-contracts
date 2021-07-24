@@ -3477,6 +3477,7 @@ name = "sator-stake-viewer"
 version = "0.0.1"
 dependencies = [
  "assert_matches",
+ "bincode",
  "borsh 0.9.1",
  "borsh-derive 0.9.1",
  "bs58",

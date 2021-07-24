@@ -1,4 +1,4 @@
-//#![cfg(all(target_arch = "bpf", not(feature = "no-entrypoint")))]
+#![cfg(all(target_arch = "bpf", not(feature = "no-entrypoint")))]
 
 use solana_program::msg;
 use solana_program::program_error::{PrintProgramError, ProgramError};

@@ -31,8 +31,7 @@ impl Default for StateVersion {
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct ViewerStake {
     pub version: StateVersion,
-    pub minimal_staking_time: UnixTimestamp,
-    pub rank_requirements: [RankRequirements; 5],
+    pub ranks: [Ranks; 4],
     // can initialize state and change rules
     pub owner: SignerPubkey,
 }
@@ -41,6 +40,7 @@ pub struct ViewerStake {
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct ViewerLock {
     pub version: StateVersion,
+    pub locked_at: UnixTimestamp,
     pub locked_until: UnixTimestamp,
     /// user owner of lock
     pub owner: SignerPubkey,
@@ -48,7 +48,7 @@ pub struct ViewerLock {
 }
 
 impl ViewerLock {
-    pub const LEN: usize = 49;
+    pub const LEN: usize = 57;
 
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
@@ -68,7 +68,7 @@ impl ViewerLock {
 }
 
 impl ViewerStake {
-    pub const LEN: usize = 101;
+    pub const LEN: usize = 113;
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
             Ok(())

@@ -11,9 +11,15 @@ use solana_sdk::{
 };
 use std::mem;
 
-use crate::{instruction::InitializeStakeInput, program_id, sdk::{program::PubkeyPatterns, types::{Lamports, MintPubkey, TokenAccountPubkey}}, state};
-
-
+use crate::{
+    instruction::InitializeStakeInput,
+    program_id,
+    sdk::{
+        program::PubkeyPatterns,
+        types::{Lamports, MintPubkey, TokenAccountPubkey},
+    },
+    state,
+};
 
 pub fn create_token_account(
     account_rent: Lamports,

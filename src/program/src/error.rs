@@ -6,6 +6,7 @@ use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 pub enum Error {
     LockStakingTimeMustBeMoreThanMinimal,
     UnlockCanBeDoneOnlyAfterStakeTimeLapsed,
+    UnlockLockAccountNotDerivedFromWalletStakeProgram,
 }
 
 impl Error {

@@ -15,13 +15,12 @@ use crate::{program_id, state, types::*};
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct InitializeStakeInput {
-    pub rank_requirements: [RankRequirements; 5],
-    pub minimal_staking_time: ApproximateSeconds,
+    pub ranks: [Ranks; 4],
 }
 
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct LockInput {
-    /// any of times from [crate::state::ViewerStake::rank_requirements]
+    /// any of times from [crate::state::ViewerStake::ranks] or more
     pub duration: ApproximateSeconds,
     pub amount: TokenAmount,
 }
@@ -99,7 +98,7 @@ pub fn initialize_stake(
 #[allow(clippy::too_many_arguments)]
 pub fn lock(
     wallet: &SignerPubkey,
-    stake: &Pubkey,    
+    stake: &Pubkey,
     token_account_source: &TokenAccountPubkey,
     input: LockInput,
 ) -> Result<(solana_program::instruction::Instruction, Pubkey), ProgramError> {
@@ -107,31 +106,32 @@ pub fn lock(
     let token_account_stake_target = Pubkey::create_with_seed(
         &stake_authority,
         "ViewerStake::token_account",
-        &program_id(),
+        &spl_token::id(),
     )?;
     let lock_account =
         Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &program_id())?;
-    Ok((solana_program::instruction::Instruction::new_with_borsh(
-        crate::id(),
-        &Instruction::Lock(input),
-        vec![
-            AccountMeta::new_readonly(system_program::id(), false),
-            AccountMeta::new_readonly(sysvar::rent::id(), false),
-            AccountMeta::new_readonly(sysvar::clock::id(), false),
-            AccountMeta::new_readonly(spl_token::id(), false),
-            AccountMeta::new_readonly(*wallet, true),
-            AccountMeta::new_readonly(*stake, false),
-            AccountMeta::new_readonly(stake_authority, false),
-            AccountMeta::new(*token_account_source, false),
-            AccountMeta::new(token_account_stake_target, false),
-            AccountMeta::new(lock_account.0, false),
-        ],     
-    ), 
-    lock_account.0)
-)
+    Ok((
+        solana_program::instruction::Instruction::new_with_borsh(
+            crate::id(),
+            &Instruction::Lock(input),
+            vec![
+                AccountMeta::new_readonly(system_program::id(), false),
+                AccountMeta::new_readonly(sysvar::rent::id(), false),
+                AccountMeta::new_readonly(sysvar::clock::id(), false),
+                AccountMeta::new_readonly(spl_token::id(), false),
+                AccountMeta::new_readonly(*wallet, true),
+                AccountMeta::new_readonly(*stake, false),
+                AccountMeta::new_readonly(stake_authority, false),
+                AccountMeta::new(*token_account_source, false),
+                AccountMeta::new(token_account_stake_target, false),
+                AccountMeta::new(lock_account.0, false),
+            ],
+        ),
+        lock_account.0,
+    ))
 }
 
-/// Creates [Instruction::Unlock] instruction which transfer `amount` from `token_account_stake_source` to `token_account_target` if and only if now is more than [ViewerLock::locked_until]
+/// Creates [Instruction::Unlock] instruction which transfer `amount` from `token_account_stake_source` to `token_account_target` if and only if now is more than [crate::state::ViewerLock::locked_until]
 /// Resets unlock
 ///
 /// Accounts:
@@ -147,13 +147,13 @@ pub fn lock(
 pub fn unlock(
     wallet: &SignerPubkey,
     stake: &Pubkey,
-    stake_authority: &ProgramDerivedPubkey,
     token_account_target: &TokenAccountPubkey,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
+    let (stake_authority, _) = Pubkey::find_program_address_for_pubkey(stake, &program_id());
     let token_account_stake_source = Pubkey::create_with_seed(
         &stake_authority,
         "ViewerStake::token_account",
-        &program_id(),
+        &spl_token::id(),
     )?;
     let lock_account =
         Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &program_id())?;
@@ -165,7 +165,7 @@ pub fn unlock(
             AccountMeta::new_readonly(spl_token::id(), false),
             AccountMeta::new_readonly(*wallet, true),
             AccountMeta::new_readonly(*stake, false),
-            AccountMeta::new_readonly(*stake_authority, false),
+            AccountMeta::new_readonly(stake_authority, false),
             AccountMeta::new(*token_account_target, false),
             AccountMeta::new(token_account_stake_source, false),
             AccountMeta::new(lock_account.0, false),

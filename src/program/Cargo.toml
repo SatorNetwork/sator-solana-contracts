@@ -27,6 +27,7 @@ solana-sdk = "=1.7.6"
 assert_matches = "1.4.0"
 solana-validator = "1.7.6"
 solana-client-helpers = "1.0"
+bincode = "*"
 
 [lib]
 crate-type = ["cdylib", "lib"]

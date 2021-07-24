@@ -14,7 +14,7 @@ use solana_program::{
 use crate::instruction::Instruction;
 use crate::program_id;
 use crate::sdk::invoke::ProgramPubkeySignature;
-use crate::sdk::program::{is_derived, AccountPatterns, PubkeyPatterns};
+use crate::sdk::program::{AccountPatterns, PubkeyPatterns, burn_account, is_derived};
 use crate::sdk::types::{ProgramPubkey, SignerPubkey};
 use crate::sdk::{
     borsh::{BorshDeserializeConst, BorshSerializeConst},
@@ -75,7 +75,7 @@ pub fn process_instruction(
         }
 
         Instruction::Unlock => {
-            msg!("Instruction::unlock");
+            msg!("Instruction::Unlock");
             match accounts {
                 [clock, spl_token, wallet, stake, stake_authority, token_account_target, token_account_stake_source, lock_account, ..] => {
                     unlock(
@@ -151,8 +151,7 @@ fn initialize_stake<'a>(
     )?;
 
     let mut state = stake.deserialize::<ViewerStake>()?;
-    state.minimal_staking_time = input.minimal_staking_time;
-    state.rank_requirements = input.rank_requirements.clone();
+    state.ranks = input.ranks.clone();
     state.owner = owner.pubkey();
     state.serialize_const(&mut *stake.try_borrow_mut_data()?)?;
 
@@ -190,7 +189,7 @@ fn lock<'a>(
 ) -> ProgramResult {
     let state = stake.deserialize::<ViewerStake>()?;
     let clock = Clock::from_account_info(clock)?;
-    if input.duration < state.rank_requirements[0].minimal_staking_time {
+    if input.duration < state.ranks[0].minimal_staking_time {
         return crate::error::Error::LockStakingTimeMustBeMoreThanMinimal.into();
     }
     let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake)?;
@@ -206,13 +205,13 @@ fn lock<'a>(
     is_derived(lock_account_pubkey, lock_account)?;
 
     let authority_signature = ProgramPubkeySignature::new(stake, bump_seed);
-
-    let mut lock_state = if stake.data_is_empty() {
+    let lock_state = if lock_account.data_is_empty() {
         let lock_state = ViewerLock {
             amount: input.amount,
             owner: wallet.pubkey(),
             locked_until: clock.unix_timestamp + input.duration,
             version: StateVersion::V1,
+            locked_at: clock.unix_timestamp,
         };
         let rent_state = Rent::from_account_info(rent)?;
         let lamports = rent_state.minimum_balance(ViewerLock::LEN);
@@ -234,6 +233,7 @@ fn lock<'a>(
         is_derived(lock_state.owner, wallet)?;
         lock_state.locked_until = clock.unix_timestamp + input.duration;
         lock_state.amount += input.amount;
+        lock_state.locked_at = clock.unix_timestamp;
         lock_state
     };
 
@@ -245,7 +245,6 @@ fn lock<'a>(
         input.amount,
     );
     lock_state.serialize_const(&mut *lock_account.try_borrow_mut_data()?)?;
-
     Ok(())
 }
 
@@ -260,16 +259,15 @@ fn unlock<'a>(
     lock_account: &AccountInfo<'a>,
 ) -> ProgramResult {
     let mut lock_state = lock_account.deserialize::<ViewerLock>()?;
-
     is_derived(lock_state.owner, wallet)?;
     wallet.is_signer()?;
     let clock = Clock::from_account_info(clock)?;
-    if lock_state.locked_until < clock.unix_timestamp {
+    if lock_state.locked_until > clock.unix_timestamp {
         return crate::error::Error::UnlockCanBeDoneOnlyAfterStakeTimeLapsed.into();
     }
 
-    let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake)?;
-    is_derived(token_account_pubkey, token_account_stake_source)?;
+    let (stake_authority_pubkey, bump_seed, token_account_stake_pubkey) = derive_token_account(stake)?;
+    is_derived(token_account_stake_pubkey, token_account_stake_source)?;
 
     let (lock_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
@@ -289,8 +287,8 @@ fn unlock<'a>(
         lock_state.amount,
         &authority_signature,
     );
-    lock_state.amount = 0;
-    lock_state.serialize_const(&mut *lock_account.try_borrow_mut_data()?)?;
+    
+    burn_account(lock_account, wallet);
 
     Ok(())
 }

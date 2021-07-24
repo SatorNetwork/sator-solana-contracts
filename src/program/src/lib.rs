@@ -1,13 +1,20 @@
 #![feature(trivial_bounds)]
-
-#[cfg(not(feature = "no-entrypoint"))]
+//! Stake for viewers:
+//! - user stakes has minimal amounts  to stake and time to stake to fit specified rank, which is associate with multiplier
+//! - user can stake any amount, so minimal time should be not less than minimal for smallest rank
+//! - amount can be less than minimal rank
+//! - adding amount resets the timer
+//! - total 4 ranks
+//! - lock accounts and stake token account are derived - operations are signed by on chain stake derived signature
+//!
 pub mod entrypoint;
-mod error;
-mod instruction;
+#[cfg(not(feature = "no-entrypoint"))]
+pub mod error;
+pub mod instruction;
 mod processor;
 mod sdk;
-mod state;
-mod types;
+pub mod state;
+pub mod types;
 
 #[cfg(all(feature = "test-bpf", test))]
 mod tests;
