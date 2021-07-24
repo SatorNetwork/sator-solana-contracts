@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use solana_program::msg;
 use solana_program::program_error::{PrintProgramError, ProgramError};
 use solana_program::program_pack::Pack;
@@ -15,7 +17,7 @@ use crate::sdk::{
     invoke,
 };
 use crate::state::{StateVersion, ViewerStake};
-use borsh::*;
+use borsh::{BorshDeserialize, BorshSerialize};
 
 // Program entrypoint's implementation
 pub fn process_instruction(
@@ -83,13 +85,7 @@ fn initialize_stake<'a>(
 ) -> ProgramResult {
     owner.is_signer()?;
     stake.is_signer()?;
-    let (stake_authority_pubkey, bump_seed) =
-        Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::program_id());
-    let token_account_pubkey = Pubkey::create_with_seed(
-        &stake_authority_pubkey,
-        "ViewerStake::token_account",
-        &spl_token::id(),
-    )?;
+    let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake)?;
 
     wire(stake_authority_pubkey, stake_authority)?;
     wire(token_account_pubkey, token_account)?;
@@ -110,6 +106,7 @@ fn initialize_stake<'a>(
     let authority_signature = &[&authority_signature[..]];
 
     invoke::create_account_with_seed_signed(
+        system_program,
         &owner,
         &token_account,
         stake_authority,
@@ -130,13 +127,25 @@ fn initialize_stake<'a>(
         authority_signature,
     )?;
 
-    let mut state = ViewerStake::try_from_slice(&stake.data.borrow())?;
+    let x= stake.try_borrow_data().expect("no borrow issues");
+    let mut state = stake.deserialize::<ViewerStake>()?;
     state.minimal_staking_time = input.minimal_staking_time;
     state.rank_requirements = input.rank_requirements.clone();
     state.owner = owner.pubkey();
     state.serialize_const(&mut *stake.try_borrow_mut_data()?)?;
 
     Ok(())
+}
+
+fn derive_token_account(stake: &AccountInfo) -> Result<(Pubkey, u8, Pubkey), ProgramError> {
+    let (stake_authority_pubkey, bump_seed) =
+        Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::program_id());
+    let token_account_pubkey = Pubkey::create_with_seed(
+        &stake_authority_pubkey,
+        "ViewerStake::token_account",
+        &spl_token::id(),
+    )?;
+    Ok((stake_authority_pubkey, bump_seed, token_account_pubkey))
 }
 
 fn lock(
@@ -150,5 +159,15 @@ fn lock(
     lock_account: &AccountInfo,
     input: crate::instruction::LockInput,
 ) -> ProgramResult {
-    todo!()
+    wallet.is_signer()?;
+
+    let state = stake.deserialize::<ViewerStake>()?;
+    
+    let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake)?;
+    
+    wire(stake_authority_pubkey, stake_authority)?;
+    wire(token_account_pubkey, token_account_stake_target)?;
+
+    Ok(())
+    
 }

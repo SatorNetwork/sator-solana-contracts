@@ -21,7 +21,7 @@ pub fn create_account<'a>(
     required_lamports: u64,
     space: u64,
     owner: &ProgramPubkey,
-    _system_program: &AccountInfo<'a>,
+    _system_program: &AccountInfo<'a>, 
 ) -> ProgramResult {
     invoke(
         &system_instruction::create_account(
@@ -59,6 +59,7 @@ pub fn create_account_signed<'a>(
 /// Create account
 #[allow(clippy::too_many_arguments)]
 pub fn create_account_with_seed_signed<'a>(
+    _system_program: &AccountInfo<'a>, // explicit parameters usage just to indicate dependency
     from_account: &AccountInfo<'a>,
     to_account: &AccountInfo<'a>,
     base: &AccountInfo<'a>,

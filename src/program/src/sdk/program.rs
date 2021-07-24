@@ -2,7 +2,7 @@
 
 use std::mem;
 
-use borsh::BorshSerialize;
+use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -87,6 +87,8 @@ pub trait AccountPatterns {
 
     /// checks if account is signer
     fn is_signer(&self) -> ProgramResult;
+
+    fn deserialize<T:BorshDeserialize>(&self) -> Result<T, std::io::Error>;
 }
 
 impl<'a> AccountPatterns for AccountInfo<'a> {
@@ -123,6 +125,11 @@ impl<'a> AccountPatterns for AccountInfo<'a> {
         }
         Ok(())
     }
+
+    fn deserialize<T:BorshDeserialize>(&self) -> Result<T, std::io::Error> {
+        let data = self.try_borrow_data().expect("program is written with proper single borrow");
+        T::try_from_slice(&data)
+    }    
 }
 
 /// errors if relation is not expected
