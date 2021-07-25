@@ -1,4 +1,4 @@
-use sator_stake_viewer::{instruction::InitializeStakeInput, state::ViewerStake, types::Ranks};
+use sator_stake_viewer::{instruction::InitializeStakePoolInput, state::ViewerStakePool, types::Rank};
 use solana_clap_utils::keypair::signer_from_path;
 use solana_client::rpc_client::RpcClient;
 use solana_program::{clock::UnixTimestamp, pubkey::Pubkey};
@@ -16,7 +16,7 @@ fn main() {
     let rpc_client = RpcClient::new("https://api.devnet.solana.com".to_string());
     solana_logger::setup_with_default("solana=debug");
 
-    let rent= rpc_client.get_minimum_balance_for_rent_exemption(ViewerStake::LEN).unwrap();
+    let rent= rpc_client.get_minimum_balance_for_rent_exemption(ViewerStakePool::LEN).unwrap();
     
 
 let stake= Keypair::new();
@@ -26,24 +26,24 @@ let mut transaction = Transaction::new_with_payer(
             &keypair.pubkey(), 
             &stake.pubkey(), 
             &"13kBuVtxUT7CeddDgHfe61x3YdpBWTCKeB2Zg2LC4dab".parse().unwrap(),
-            InitializeStakeInput { 
+            InitializeStakePoolInput { 
                 ranks: [
-                    Ranks {
+                    Rank {
                         minimal_staking_time: 0,
                         multiplier:  2500,
                         amount: 100,
                     },
-                    Ranks {
+                    Rank {
                         minimal_staking_time: 30 * 60,
                         multiplier: 5000,
                         amount: 200
                     },
-                    Ranks {
+                    Rank {
                         minimal_staking_time: 60 * 60,
                         multiplier:  7500,
                         amount: 300
                     },
-                    Ranks {
+                    Rank {
                         minimal_staking_time: 2 * 60 * 60,
                         multiplier: 10000,
                         amount: 500

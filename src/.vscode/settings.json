@@ -3,7 +3,8 @@
         "Borsh",
         "Pubkey",
         "blockhash",
-        "lamports"
+        "lamports",
+        "unstake"
     ],
     "_rust-analyzer.cargo.target": "bpfel-unknown-unknown",
     "_rust-analyzer.cargo.features": [

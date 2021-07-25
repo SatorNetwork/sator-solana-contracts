@@ -4,9 +4,10 @@ use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
 #[derive(Debug, ToPrimitive)]
 pub enum Error {
-    LockStakingTimeMustBeMoreThanMinimal,
-    UnlockCanBeDoneOnlyAfterStakeTimeLapsed,
-    UnlockLockAccountNotDerivedFromWalletStakeProgram,
+    StakeStakingTimeMustBeMoreThanMinimal,
+    UnstakeCanBeDoneOnlyAfterStakeTimeLapsed,
+    UnstakeStakeAccountNotDerivedFromWalletStakeProgram,
+    UnstakeOverflow,
 }
 
 impl Error {
@@ -18,5 +19,11 @@ impl Error {
 impl Into<ProgramResult> for Error {
     fn into(self) -> ProgramResult {
         Err(ProgramError::Custom(self.to_error_code()))
+    }
+}
+
+impl Into<ProgramError> for Error {
+    fn into(self) -> ProgramError {
+        ProgramError::Custom(self.to_error_code())
     }
 }

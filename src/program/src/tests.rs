@@ -1,4 +1,4 @@
-use crate::{instruction::LockInput, sdk::program::PubkeyPatterns, spl_transactions, state::{ViewerLock, ViewerStake}, tests_helpers::*, transactions::{self, warp_seconds}};
+use crate::{instruction::StakeInput, sdk::program::PubkeyPatterns, spl_transactions, state::{ViewerStake, ViewerStakePool}, tests_helpers::*, transactions::{self, warp_seconds}};
 use borsh::BorshDeserialize;
 use solana_program::native_token::sol_to_lamports;
 use solana_program_test::*;
@@ -12,8 +12,8 @@ use solana_sdk::{
 use std::mem;
 
 use crate::{
-    instruction::InitializeStakeInput, processor::process_instruction, program_id,
-    spl_transactions::create_initialize_mint, state, transactions::initialize_stake, types::Ranks,
+    instruction::InitializeStakePoolInput, processor::process_instruction, program_id,
+    spl_transactions::create_initialize_mint, state, transactions::initialize_stake, types::Rank,
 };
 
 pub fn new_program_test() -> ProgramTest {
@@ -72,27 +72,27 @@ async fn flow() {
     let multiplier_one = 1_0000;
     let amount = 1000;
 
-    let (transaction, stake) = initialize_stake(
+    let (transaction, stake_pool) = initialize_stake(
         &owner,
         &mint.pubkey(),
-        InitializeStakeInput {
+        InitializeStakePoolInput {
             ranks: [
-                Ranks {
+                Rank {
                     minimal_staking_time: 0,
                     multiplier: multiplier_one,
                     amount,
                 },
-                Ranks {
+                Rank {
                     minimal_staking_time: 1 * hour,
                     multiplier: 2 * multiplier_one,
                     amount: amount * 2,
                 },
-                Ranks {
+                Rank {
                     minimal_staking_time: 2 * hour,
                     multiplier: 3 * multiplier_one,
                     amount: amount * 3,
                 },
-                Ranks {
+                Rank {
                     minimal_staking_time: 3 * hour,
                     multiplier: 4 * multiplier_one,
                     amount: amount * 4,
@@ -109,10 +109,10 @@ async fn flow() {
         .unwrap();
 
     let stake_authority =
-        Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::program_id());
+        Pubkey::find_program_address_for_pubkey(&stake_pool.pubkey(), &crate::program_id());
     let token_account = Pubkey::create_with_seed(
         &stake_authority.0,
-        "ViewerStake::token_account",
+        "ViewerStakePool::token_account",
         &spl_token::id(),
     )
     .unwrap();
@@ -120,9 +120,9 @@ async fn flow() {
     let token_account_state =
         get_token_account_state(&mut client.banks_client, &token_account).await;
     assert_eq!(token_account_state.mint, mint.pubkey());
-    let stake_state: ViewerStake = client
+    let stake_state: ViewerStakePool = client
         .banks_client
-        .get_account_data_with_borsh(stake.pubkey())
+        .get_account_data_with_borsh(stake_pool.pubkey())
         .await
         .unwrap();
 
@@ -188,14 +188,14 @@ async fn flow() {
         .await
         .unwrap();
 
-    let lock_duration = hour;
-    let (transaction, lock) = transactions::lock(
+    let stake_duration = hour;
+    let (transaction, stake_account) = transactions::stake(
         &user,
-        &stake.pubkey(),
+        &stake_pool.pubkey(),
         &user_token_account,
-        LockInput {
+        StakeInput {
             amount: 1000,
-            duration: lock_duration,
+            duration: stake_duration,
         },
         client.last_blockhash,
     );
@@ -211,20 +211,24 @@ async fn flow() {
     let token_account_state =
         get_token_account_state(&mut client.banks_client, &token_account).await;
 
-    let viewer_lock: ViewerLock = client
+    let viewer_stake_account
+    : ViewerStake = client
         .banks_client
-        .get_account_data_with_borsh(lock.pubkey())
+        .get_account_data_with_borsh(stake_account.pubkey())
         .await
         .unwrap();
     assert_eq!(
-        viewer_lock.locked_until - viewer_lock.locked_at,
-        lock_duration
+        viewer_stake_account
+        .staked_until - viewer_stake_account
+        .staked_at,
+        stake_duration
     );
-    assert_eq!(viewer_lock.amount, 1000);
+    assert_eq!(viewer_stake_account
+        .amount, 1000);
 
-    let transaction = transactions::unlock(
+    let transaction = transactions::unstake(
         &user,
-        &stake.pubkey(),
+        &stake_pool.pubkey(),
         &user_token_account,
         client.last_blockhash,
     );
@@ -235,13 +239,13 @@ async fn flow() {
         .await
         .expect_err("must fail to unlock");
 
-        let (transaction, lock) = transactions::lock(
+        let (transaction, _) = transactions::stake(
             &user,
-            &stake.pubkey(),
+            &stake_pool.pubkey(),
             &user_token_account,
-            LockInput {
+            StakeInput {
                 amount: 2000,
-                duration: lock_duration,
+                duration: stake_duration,
             },
             client.last_blockhash,
         );
@@ -253,24 +257,26 @@ async fn flow() {
             .unwrap();        
 
             
-            let viewer_lock: ViewerLock = client
+            let viewer_stake_account
+            : ViewerStake = client
         .banks_client
-        .get_account_data_with_borsh(lock.pubkey())
+        .get_account_data_with_borsh(stake_account.pubkey())
         .await
         .unwrap();
 
 
             assert_eq!(
-                viewer_lock.locked_until - viewer_lock.locked_at,
-                lock_duration
+                viewer_stake_account.staked_until - viewer_stake_account.staked_at,
+                stake_duration
             );
-            assert_eq!(viewer_lock.amount, 3000);    
+            assert_eq!(viewer_stake_account
+                .amount, 3000);    
             
         warp_seconds(&mut client, 5 * hour).await;
 
-        let transaction = transactions::unlock(
+        let transaction = transactions::unstake(
             &user,
-            &stake.pubkey(),
+            &stake_pool.pubkey(),
             &user_token_account,
             client.last_blockhash,
         );
@@ -283,7 +289,7 @@ async fn flow() {
 
         client
             .banks_client
-            .get_account_data_with_borsh::<ViewerLock>(lock.pubkey())
+            .get_account_data_with_borsh::<ViewerStake>(stake_account.pubkey())
             .await
             .expect_err("account was burned");
     

@@ -11,7 +11,7 @@ use solana_sdk::{
 use std::mem;
 
 use crate::{
-    instruction::{InitializeStakeInput, LockInput},
+    instruction::{InitializeStakePoolInput, StakeInput},
     program_id,
     sdk::types::{ApproximateSeconds, MintPubkey, TokenAccountPubkey},
     state,
@@ -20,7 +20,7 @@ use crate::{
 pub fn initialize_stake(
     owner: &Keypair,
     mint: &MintPubkey,
-    input: InitializeStakeInput,
+    input: InitializeStakePoolInput,
     recent_blockhash: solana_program::hash::Hash,
 ) -> (Transaction, Pubkey) {
     let stake = Keypair::new();
@@ -35,29 +35,29 @@ pub fn initialize_stake(
     (transaction, stake.pubkey())
 }
 
-pub fn lock(
+pub fn stake(
     wallet: &Keypair,
-    stake: &Pubkey,
+    stake_pool: &Pubkey,
     token_account_source: &TokenAccountPubkey,
-    input: LockInput,
+    input: StakeInput,
     recent_blockhash: solana_program::hash::Hash,
 ) -> (Transaction, Pubkey) {
-    let (instruction, lock) =
-        crate::instruction::lock(&wallet.pubkey(), stake, token_account_source, input)
+    let (instruction, stake) =
+        crate::instruction::stake(&wallet.pubkey(), stake_pool, token_account_source, input)
             .expect("could create derived keys");
     let mut transaction = Transaction::new_with_payer(&[instruction], Some(&wallet.pubkey()));
     transaction.sign(&[wallet], recent_blockhash);
-    (transaction, lock)
+    (transaction, stake)
 }
 
-pub fn unlock(
+pub fn unstake(
     wallet: &Keypair,
-    stake: &Pubkey,
+    stake_pool: &Pubkey,
     token_account_target: &TokenAccountPubkey,
     recent_blockhash: solana_program::hash::Hash,
 ) -> Transaction {
     let instruction=
-        crate::instruction::unlock(&wallet.pubkey(), stake, token_account_target)
+        crate::instruction::unstake(&wallet.pubkey(), stake_pool, token_account_target)
             .expect("could create derived keys");
     let mut transaction = Transaction::new_with_payer(&[instruction], Some(&wallet.pubkey()));
     transaction.sign(&[wallet], recent_blockhash);

@@ -5,7 +5,7 @@
 //! - amount can be less than minimal rank
 //! - adding amount resets the timer
 //! - total 4 ranks
-//! - lock accounts and stake token account are derived - operations are signed by on chain stake derived signature
+//! - stake accounts and stake token account are derived - operations are signed by on chain stake derived signature
 //!
 pub mod entrypoint;
 pub mod errors;

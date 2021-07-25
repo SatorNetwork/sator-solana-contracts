@@ -12,7 +12,7 @@ use solana_sdk::{
 use std::mem;
 
 use crate::{
-    instruction::InitializeStakeInput,
+    instruction::InitializeStakePoolInput,
     program_id,
     sdk::{
         program::PubkeyPatterns,
