@@ -62,8 +62,7 @@ let signers = vec![
     &keypair,
     &stake,    
 ];
-    transaction.sign(&signers, recent_blockhash);
-
+    transaction.sign(&signers, recent_blockhash);    
     
     let signature = rpc_client
     .send_and_confirm_transaction_with_spinner_and_commitment(

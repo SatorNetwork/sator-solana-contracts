@@ -55,19 +55,18 @@ pub fn process_instruction(
         Instruction::Stake(input) => {
             msg!("Instruction::Stake");
             match accounts {
-                [system_program, rent, clock, spl_token, wallet, stake_pool, stake_authority, token_account_source, token_account_stake_target, stake_account, stake_pool_owner, ..] => {
+                [system_program, rent, clock, spl_token, user_wallet, stake_pool, stake_authority, token_account_source, token_account_stake_target, stake_account, ..] => {
                     stake(
                         system_program,
                         rent,
                         clock,
                         spl_token,
-                        wallet,
+                        user_wallet,
                         stake_pool,
                         stake_authority,
                         token_account_source,
                         token_account_stake_target,
-                        stake_account,
-                        stake_pool_owner,
+                        stake_account,                        
                         input,
                     )
                 }
@@ -181,18 +180,15 @@ fn stake<'a>(
     rent: &AccountInfo<'a>,
     clock: &AccountInfo<'a>,
     spl_token: &AccountInfo<'a>,
-    wallet: &AccountInfo<'a>,
+    user_wallet: &AccountInfo<'a>,
     stake_pool: &AccountInfo<'a>,
     stake_authority: &AccountInfo<'a>,
     token_account_source: &AccountInfo<'a>,
     token_account_stake_target: &AccountInfo<'a>,
-    stake_account: &AccountInfo<'a>,
-    stake_pool_owner: &AccountInfo<'a>,
+    stake_account: &AccountInfo<'a>,    
     input: crate::instruction::StakeInput,
-) -> ProgramResult {
-    // as decided, admin will dispatch all instructions
-    stake_pool_owner.is_signer()?;
-    //wallet.is_signer()?;
+) -> ProgramResult {    
+    user_wallet.is_signer()?;
     
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     let clock = Clock::from_account_info(clock)?;
@@ -204,7 +200,7 @@ fn stake<'a>(
 
     let (stake_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
-        &wallet.pubkey(),
+        &user_wallet.pubkey(),
         &program_id(),
     )?;
 
@@ -216,7 +212,7 @@ fn stake<'a>(
     let stake_account_state = if stake_account.data_is_empty() {        
         let stake_account_state = ViewerStake {
             amount: input.amount,
-            owner: wallet.pubkey(),
+            owner: user_wallet.pubkey(),
             staked_until: clock.unix_timestamp + input.duration,
             version: StateVersion::V1,
             staked_at: clock.unix_timestamp,
@@ -225,7 +221,7 @@ fn stake<'a>(
         let lamports = rent_state.minimum_balance(ViewerStake::LEN);
         invoke::create_account_with_seed_signed(
             system_program,
-            &wallet,
+            &user_wallet, // can split signers from payers, so that in future either user can stake or admin
             &stake_account,
             stake_authority,
             seed,
@@ -242,7 +238,7 @@ fn stake<'a>(
             return errors::Error::StakeStakingTimeMustBeMoreThanPrevious.into();
         }
 
-        is_derived(stake_account_state.owner, wallet)?;
+        is_derived(stake_account_state.owner, user_wallet)?;
         stake_account_state.staked_until = clock.unix_timestamp + input.duration;
         stake_account_state.amount += input.amount;
         stake_account_state.staked_at = clock.unix_timestamp;
@@ -253,7 +249,7 @@ fn stake<'a>(
         spl_token,
         token_account_source,
         token_account_stake_target,
-        wallet,
+        user_wallet,
         input.amount,
     )?;
     stake_account_state.serialize_const(&mut *stake_account.try_borrow_mut_data()?)?;

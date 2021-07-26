@@ -192,8 +192,7 @@ async fn flow() {
     let (transaction, stake_account) = transactions::stake(
         &user_wallet,
         &stake_pool.pubkey(),
-        &user_token_account,
-        &stake_pool_owner,
+        &user_token_account,        
         StakeInput {
             amount: 1000,
             duration: stake_duration,
@@ -244,8 +243,7 @@ async fn flow() {
         let (transaction, _) = transactions::stake(
             &user_wallet,
             &stake_pool.pubkey(),
-            &user_token_account,
-            &stake_pool_owner,
+            &user_token_account,            
             StakeInput {
                 amount: 2000,
                 duration: stake_duration,

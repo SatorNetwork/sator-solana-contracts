@@ -36,18 +36,17 @@ pub fn initialize_stake(
 }
 
 pub fn stake(
-    wallet: &Keypair,
+    user_wallet: &Keypair,
     stake_pool: &Pubkey,
-    token_account_source: &TokenAccountPubkey,
-    stake_pool_owner: &Keypair,
+    token_account_source: &TokenAccountPubkey,    
     input: StakeInput,
     recent_blockhash: solana_program::hash::Hash,
 ) -> (Transaction, Pubkey) {
     let (instruction, stake) =
-        crate::instruction::stake(&wallet.pubkey(), stake_pool, token_account_source,&stake_pool_owner.pubkey(), input)
+        crate::instruction::stake(&user_wallet.pubkey(), stake_pool, token_account_source, input)
             .expect("could create derived keys");
-    let mut transaction = Transaction::new_with_payer(&[instruction], Some(&stake_pool_owner.pubkey()));
-    transaction.sign(&[stake_pool_owner], recent_blockhash);
+    let mut transaction = Transaction::new_with_payer(&[instruction], Some(&user_wallet.pubkey()));
+    transaction.sign(&[user_wallet], recent_blockhash);
     (transaction, stake)
 }
 
