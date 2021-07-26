@@ -4,7 +4,8 @@
         "Pubkey",
         "blockhash",
         "lamports",
-        "unstake"
+        "unstake",
+        "unstaking"
     ],
     "_rust-analyzer.cargo.target": "bpfel-unknown-unknown",
     "_rust-analyzer.cargo.features": [

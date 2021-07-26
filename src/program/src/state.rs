@@ -67,6 +67,11 @@ impl ViewerStake {
             Err(ProgramError::UninitializedAccount)
         }
     }
+
+    pub fn duration (&self) -> ApproximateSeconds {
+        self.staked_until - self.staked_at
+    }
+
 }
 
 impl ViewerStakePool {
@@ -97,8 +102,7 @@ impl ViewerStakePool {
         }
         let multiplier = fixed::types::U114F14::from_num(multiplier) / Rank::ONE;
         let amount = fixed::types::U114F14::from_num( account.amount);
-        multiplier.checked_mul(amount).map(|x| x.to_num()).ok_or_else(||Error::UnstakeOverflow.into())
-        
+        multiplier.checked_mul(amount).map(|x| x.to_num()).ok_or_else(||Error::UnstakeOverflow.into())   
     }
 }
 

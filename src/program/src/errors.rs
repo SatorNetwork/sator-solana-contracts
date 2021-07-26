@@ -5,6 +5,7 @@ use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 #[derive(Debug, ToPrimitive)]
 pub enum Error {
     StakeStakingTimeMustBeMoreThanMinimal,
+    StakeStakingTimeMustBeMoreThanPrevious,
     UnstakeCanBeDoneOnlyAfterStakeTimeLapsed,
     UnstakeStakeAccountNotDerivedFromWalletStakeProgram,
     UnstakeOverflow,

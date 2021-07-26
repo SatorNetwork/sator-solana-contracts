@@ -55,7 +55,7 @@ pub fn process_instruction(
         Instruction::Stake(input) => {
             msg!("Instruction::Stake");
             match accounts {
-                [system_program, rent, clock, spl_token, wallet, stake_pool, stake_authority, token_account_source, token_account_stake_target, stake_account, ..] => {
+                [system_program, rent, clock, spl_token, wallet, stake_pool, stake_authority, token_account_source, token_account_stake_target, stake_account, stake_pool_owner, ..] => {
                     stake(
                         system_program,
                         rent,
@@ -67,6 +67,7 @@ pub fn process_instruction(
                         token_account_source,
                         token_account_stake_target,
                         stake_account,
+                        stake_pool_owner,
                         input,
                     )
                 }
@@ -77,7 +78,7 @@ pub fn process_instruction(
         Instruction::Unstake => {
             msg!("Instruction::Unstake");
             match accounts {
-                [clock, spl_token, wallet, stake_pool, stake_authority, token_account_target, token_account_stake_source, stake_account, ..] => {
+                [clock, spl_token, wallet, stake_pool, stake_authority, token_account_target, token_account_stake_source, stake_account, stake_pool_owner, ..] => {
                     unstake(
                         clock,
                         spl_token,
@@ -87,6 +88,7 @@ pub fn process_instruction(
                         token_account_target,
                         token_account_stake_source,
                         stake_account,
+                        stake_pool_owner,
                     )
                 }
                 _ => Err(ProgramError::NotEnoughAccountKeys),
@@ -185,13 +187,19 @@ fn stake<'a>(
     token_account_source: &AccountInfo<'a>,
     token_account_stake_target: &AccountInfo<'a>,
     stake_account: &AccountInfo<'a>,
+    stake_pool_owner: &AccountInfo<'a>,
     input: crate::instruction::StakeInput,
 ) -> ProgramResult {
+    // as decided, admin will dispatch all instructions
+    stake_pool_owner.is_signer()?;
+    //wallet.is_signer()?;
+    
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     let clock = Clock::from_account_info(clock)?;
     if input.duration < stake_pool_state.ranks[0].minimal_staking_time {
         return errors::Error::StakeStakingTimeMustBeMoreThanMinimal.into();
     }
+
     let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake_pool)?;
 
     let (stake_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
@@ -230,6 +238,10 @@ fn stake<'a>(
         stake_account_state
     } else {
         let mut stake_account_state = stake_account.deserialize::<ViewerStake>()?;
+        if input.duration < stake_account_state.duration(){
+            return errors::Error::StakeStakingTimeMustBeMoreThanPrevious.into();
+        }
+
         is_derived(stake_account_state.owner, wallet)?;
         stake_account_state.staked_until = clock.unix_timestamp + input.duration;
         stake_account_state.amount += input.amount;
@@ -257,10 +269,14 @@ fn unstake<'a>(
     token_account_target: &AccountInfo<'a>,
     token_account_stake_source: &AccountInfo<'a>,
     stake_account: &AccountInfo<'a>,
+    stake_pool_owner: &AccountInfo<'a>,
 ) -> ProgramResult {    
     let stake_account_state = stake_account.deserialize::<ViewerStake>()?;
     is_derived(stake_account_state.owner, wallet)?;
-    wallet.is_signer()?;
+    
+    // as decided, right now admin dispatches instructions
+    stake_pool_owner.is_signer()?;
+    //wallet.is_signer()?;
     let clock = Clock::from_account_info(clock)?;
     if stake_account_state.staked_until > clock.unix_timestamp {
         return errors::Error::UnstakeCanBeDoneOnlyAfterStakeTimeLapsed.into();
@@ -281,18 +297,20 @@ fn unstake<'a>(
     
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     
-    let reward_amount = stake_pool_state.calculate_reward(stake_account_state)?;
-    msg!("Unstake::reward_amount {:?}", reward_amount);
+    // as discussed, unstaking will not give multiplier reward
+    // let reward_amount = stake_pool_state.calculate_reward(stake_account_state)?;
+        
     invoke::spl_token_transfer_signed(
         spl_token,
         token_account_stake_source,
         token_account_target,
         stake_authority,
-        reward_amount,
+        stake_account_state.amount,
         &authority_signature,
     )?;
     
-    burn_account(stake_account, wallet);
+    burn_account(stake_account, stake_pool_owner);
+    //burn_account(stake_account, wallet);
 
     Ok(())
 }

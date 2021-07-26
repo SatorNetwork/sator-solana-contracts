@@ -26,7 +26,7 @@ pub fn initialize_stake(
     let stake = Keypair::new();
     let mut transaction = Transaction::new_with_payer(
         &[
-            crate::instruction::initialize_stake(&owner.pubkey(), &stake.pubkey(), mint, input)
+            crate::instruction::initialize_stake_pool(&owner.pubkey(), &stake.pubkey(), mint, input)
                 .expect("could create derived keys"),
         ],
         Some(&owner.pubkey()),
@@ -39,14 +39,15 @@ pub fn stake(
     wallet: &Keypair,
     stake_pool: &Pubkey,
     token_account_source: &TokenAccountPubkey,
+    stake_pool_owner: &Keypair,
     input: StakeInput,
     recent_blockhash: solana_program::hash::Hash,
 ) -> (Transaction, Pubkey) {
     let (instruction, stake) =
-        crate::instruction::stake(&wallet.pubkey(), stake_pool, token_account_source, input)
+        crate::instruction::stake(&wallet.pubkey(), stake_pool, token_account_source,&stake_pool_owner.pubkey(), input)
             .expect("could create derived keys");
-    let mut transaction = Transaction::new_with_payer(&[instruction], Some(&wallet.pubkey()));
-    transaction.sign(&[wallet], recent_blockhash);
+    let mut transaction = Transaction::new_with_payer(&[instruction], Some(&stake_pool_owner.pubkey()));
+    transaction.sign(&[stake_pool_owner], recent_blockhash);
     (transaction, stake)
 }
 
@@ -54,13 +55,14 @@ pub fn unstake(
     wallet: &Keypair,
     stake_pool: &Pubkey,
     token_account_target: &TokenAccountPubkey,
+    stake_pool_owner: &Keypair,
     recent_blockhash: solana_program::hash::Hash,
 ) -> Transaction {
     let instruction=
-        crate::instruction::unstake(&wallet.pubkey(), stake_pool, token_account_target)
+        crate::instruction::unstake(&wallet.pubkey(), stake_pool, token_account_target, &stake_pool_owner.pubkey())
             .expect("could create derived keys");
-    let mut transaction = Transaction::new_with_payer(&[instruction], Some(&wallet.pubkey()));
-    transaction.sign(&[wallet], recent_blockhash);
+    let mut transaction = Transaction::new_with_payer(&[instruction], Some(&stake_pool_owner.pubkey()));
+    transaction.sign(&[stake_pool_owner], recent_blockhash);
     transaction
 }
 

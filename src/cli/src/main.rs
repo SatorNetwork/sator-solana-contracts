@@ -22,7 +22,7 @@ fn main() {
 let stake= Keypair::new();
 let mut transaction = Transaction::new_with_payer(
     &[
-        sator_stake_viewer::instruction::initialize_stake(
+        sator_stake_viewer::instruction::initialize_stake_pool(
             &keypair.pubkey(), 
             &stake.pubkey(), 
             &"13kBuVtxUT7CeddDgHfe61x3YdpBWTCKeB2Zg2LC4dab".parse().unwrap(),

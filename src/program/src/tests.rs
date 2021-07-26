@@ -30,11 +30,11 @@ pub fn new_program_test() -> ProgramTest {
 async fn flow() {
     let mut program_test = new_program_test();
 
-    let owner = Keypair::new();
-    let user = Keypair::new();
+    let stake_pool_owner = Keypair::new();
+    let user_wallet = Keypair::new();
 
     program_test.add_account(
-        owner.pubkey(),
+        stake_pool_owner.pubkey(),
         Account {
             lamports: u64::MAX / 32,
             ..<_>::default()
@@ -42,7 +42,7 @@ async fn flow() {
     );
 
     program_test.add_account(
-        user.pubkey(),
+        user_wallet.pubkey(),
         Account {
             lamports: u64::MAX / 32,
             ..<_>::default()
@@ -53,9 +53,9 @@ async fn flow() {
     let mut client = program_test.start_with_context().await;
 
     let transaction = create_initialize_mint(
-        &owner,
+        &stake_pool_owner,
         &mint,
-        &owner.pubkey(),
+        &stake_pool_owner.pubkey(),
         sol_to_lamports(10.),
         2,
         client.last_blockhash,
@@ -73,7 +73,7 @@ async fn flow() {
     let amount = 1000;
 
     let (transaction, stake_pool) = initialize_stake(
-        &owner,
+        &stake_pool_owner,
         &mint.pubkey(),
         InitializeStakePoolInput {
             ranks: [
@@ -131,10 +131,10 @@ async fn flow() {
     assert!(stake_state.ranks[3].amount > 0);
 
     let transaction = spl_transactions::mint_to(
-        &owner,
+        &stake_pool_owner,
         &mint.pubkey(),
         &token_account,
-        &owner,
+        &stake_pool_owner,
         10000000000,
         client.last_blockhash,
     );
@@ -148,8 +148,8 @@ async fn flow() {
     let (transaction, user_token_account) = spl_transactions::create_token_account(
         10000000,
         &mint.pubkey(),
-        &user,
-        &user,
+        &user_wallet,
+        &user_wallet,
         client.last_blockhash,
     );
 
@@ -160,10 +160,10 @@ async fn flow() {
         .unwrap();
 
     let transaction = spl_transactions::mint_to(
-        &owner,
+        &stake_pool_owner,
         &mint.pubkey(),
         &token_account,
-        &owner,
+        &stake_pool_owner,
         10000000000,
         client.last_blockhash,
     );
@@ -175,10 +175,10 @@ async fn flow() {
         .unwrap();
 
     let transaction = spl_transactions::mint_to(
-        &owner,
+        &stake_pool_owner,
         &mint.pubkey(),
         &user_token_account,
-        &owner,
+        &stake_pool_owner,
         1000000,
         client.last_blockhash,
     );
@@ -190,9 +190,10 @@ async fn flow() {
 
     let stake_duration = hour;
     let (transaction, stake_account) = transactions::stake(
-        &user,
+        &user_wallet,
         &stake_pool.pubkey(),
         &user_token_account,
+        &stake_pool_owner,
         StakeInput {
             amount: 1000,
             duration: stake_duration,
@@ -227,9 +228,10 @@ async fn flow() {
         .amount, 1000);
 
     let transaction = transactions::unstake(
-        &user,
+        &user_wallet,
         &stake_pool.pubkey(),
         &user_token_account,
+        &stake_pool_owner,
         client.last_blockhash,
     );
 
@@ -240,9 +242,10 @@ async fn flow() {
         .expect_err("must fail to unlock");
 
         let (transaction, _) = transactions::stake(
-            &user,
+            &user_wallet,
             &stake_pool.pubkey(),
             &user_token_account,
+            &stake_pool_owner,
             StakeInput {
                 amount: 2000,
                 duration: stake_duration,
@@ -275,9 +278,10 @@ async fn flow() {
         warp_seconds(&mut client, 5 * hour).await;
 
         let transaction = transactions::unstake(
-            &user,
+            &user_wallet,
             &stake_pool.pubkey(),
             &user_token_account,
+            &stake_pool_owner,
             client.last_blockhash,
         );
     
