@@ -28,16 +28,17 @@ impl Default for StateVersion {
     }
 }
 
-/// pool state and rules
+/// Pool state and rules
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct ViewerStakePool {
     pub version: StateVersion,
+    /// ranks 0 consider to have minimal time
     pub ranks: [Rank; 4],
     // can initialize state and change rules
     pub owner: SignerPubkey,
 }
-/// stake
+/// User stake account state
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct ViewerStake {
@@ -90,19 +91,6 @@ impl ViewerStakePool {
         } else {
             Err(ProgramError::UninitializedAccount)
         }
-    }
-
-    pub fn calculate_reward(&self, account: ViewerStake) -> Result<u64, ProgramError> {
-
-        let mut multiplier = Rank::ONE;
-        for r in self.ranks.iter() {
-            if account.amount >= r.amount && account.staked_until - account.staked_at >= r.minimal_staking_time  {
-                multiplier = Rank::ONE + r.multiplier as u128;
-            }
-        }
-        let multiplier = fixed::types::U114F14::from_num(multiplier) / Rank::ONE;
-        let amount = fixed::types::U114F14::from_num( account.amount);
-        multiplier.checked_mul(amount).map(|x| x.to_num()).ok_or_else(||Error::UnstakeOverflow.into())   
     }
 }
 

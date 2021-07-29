@@ -10,7 +10,7 @@ cargo  build-bpf; cargo fmt --all;cargo clippy --all;cargo test-bpf; cargo doc -
 ```
 
 
-## Spec
+## Old Spec
 
 
 https://docs.google.com/document/d/1UnyGdzy--txmfoL5sragqE2LBa6dVHcp/edit

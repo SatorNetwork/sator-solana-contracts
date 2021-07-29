@@ -21,7 +21,7 @@ use crate::sdk::{
     invoke,
 };
 use crate::state::{StateVersion, ViewerStake, ViewerStakePool};
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::{BorshSerialize};
 
 // Program entrypoint's implementation
 pub fn process_instruction(
@@ -188,10 +188,11 @@ fn stake<'a>(
     stake_account: &AccountInfo<'a>,    
     input: crate::instruction::StakeInput,
 ) -> ProgramResult {    
-    user_wallet.is_signer()?;
-    
+    user_wallet.is_signer()?;    
+    stake_pool.is_owner(&program_id())?;
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
-    let clock = Clock::from_account_info(clock)?;
+    stake_pool_state.initialized()?;
+    let clock = Clock::from_account_info(clock)?;    
     if input.duration < stake_pool_state.ranks[0].minimal_staking_time {
         return errors::Error::StakeStakingTimeMustBeMoreThanMinimal.into();
     }
@@ -233,7 +234,10 @@ fn stake<'a>(
         )?;
         stake_account_state
     } else {
+        stake_account.is_owner(&program_id())?;
         let mut stake_account_state = stake_account.deserialize::<ViewerStake>()?;
+        stake_account_state.initialized()?;
+        
         if input.duration < stake_account_state.duration(){
             return errors::Error::StakeStakingTimeMustBeMoreThanPrevious.into();
         }
@@ -268,6 +272,8 @@ fn unstake<'a>(
     stake_pool_owner: &AccountInfo<'a>,
 ) -> ProgramResult {    
     let stake_account_state = stake_account.deserialize::<ViewerStake>()?;
+    stake_account_state.initialized()?;
+    stake_account.is_owner(&program_id())?;
     is_derived(stake_account_state.owner, wallet)?;
     
     // as decided, right now admin dispatches instructions

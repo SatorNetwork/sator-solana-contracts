@@ -11,8 +11,7 @@ use solana_sdk::{
 };
 use std::mem;
 
-use crate::{
-    instruction::InitializeStakePoolInput,
+use crate::{    
     program_id,
     sdk::{
         program::PubkeyPatterns,

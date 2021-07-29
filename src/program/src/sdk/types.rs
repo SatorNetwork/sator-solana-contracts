@@ -9,9 +9,6 @@ pub type ProgramDerivedPubkey = Pubkey;
 /// related to [solana_program::clock::UnixTimestamp]
 pub type ApproximateSeconds = i64;
 
-/// Fixed point with one = 1.0000.
-pub type BasisPointsMultiplier = u32;
-
 pub type MintPubkey = Pubkey;
 pub type TokenAccountPubkey = Pubkey;
 pub type SignerPubkey = Pubkey;

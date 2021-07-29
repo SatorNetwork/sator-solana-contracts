@@ -5,13 +5,14 @@
 //! - amount can be less than minimal rank
 //! - adding amount resets the timer
 //! - total 4 ranks
-//! - stake accounts and stake token account are derived - operations are signed by on chain stake derived signature
-//!
+//! - `stake_authority` is derived operations are signed by on chain stake derived signature
+//! - `stake_pool` `token_account` is derived from and owned by `stake_authority`
+//! - `stake_account` for each user is derived 
 pub mod entrypoint;
 pub mod errors;
 pub mod instruction;
 mod processor;
-mod sdk;
+pub mod sdk;
 pub mod state;
 pub mod types;
 #[cfg(all(feature = "test-bpf", test))]

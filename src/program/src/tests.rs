@@ -68,8 +68,7 @@ async fn flow() {
         .unwrap();
 
     let minute = 60;
-    let hour = 60 * minute;
-    let multiplier_one = 1_0000;
+    let hour = 60 * minute;    
     let amount = 1000;
 
     let (transaction, stake_pool) = initialize_stake(
@@ -78,23 +77,19 @@ async fn flow() {
         InitializeStakePoolInput {
             ranks: [
                 Rank {
-                    minimal_staking_time: 0,
-                    multiplier: multiplier_one,
+                    minimal_staking_time: 0,                    
                     amount,
                 },
                 Rank {
-                    minimal_staking_time: 1 * hour,
-                    multiplier: 2 * multiplier_one,
+                    minimal_staking_time: 1 * hour,                    
                     amount: amount * 2,
                 },
                 Rank {
-                    minimal_staking_time: 2 * hour,
-                    multiplier: 3 * multiplier_one,
+                    minimal_staking_time: 2 * hour,                    
                     amount: amount * 3,
                 },
                 Rank {
-                    minimal_staking_time: 3 * hour,
-                    multiplier: 4 * multiplier_one,
+                    minimal_staking_time: 3 * hour,                    
                     amount: amount * 4,
                 },
             ],
@@ -127,7 +122,6 @@ async fn flow() {
         .unwrap();
 
     assert!(stake_state.ranks[3].minimal_staking_time > 0);
-    assert!(stake_state.ranks[3].multiplier > 0);
     assert!(stake_state.ranks[3].amount > 0);
 
     let transaction = spl_transactions::mint_to(
