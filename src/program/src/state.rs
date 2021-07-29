@@ -76,7 +76,7 @@ impl ViewerStake {
 }
 
 impl ViewerStakePool {
-    pub const LEN: usize = 113;
+    pub const LEN: usize = 97;
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
             Ok(())

@@ -154,6 +154,7 @@ fn initialize_stake<'a>(
     let mut state = stake_pool.deserialize::<ViewerStakePool>()?;
     state.ranks = input.ranks.clone();
     state.owner = owner.pubkey();
+    state.version = StateVersion::V1;
     state.serialize_const(&mut *stake_pool.try_borrow_mut_data()?)?;
 
     Ok(())
@@ -244,7 +245,7 @@ fn stake<'a>(
 
         is_derived(stake_account_state.owner, user_wallet)?;
         stake_account_state.staked_until = clock.unix_timestamp + input.duration;
-        stake_account_state.amount += input.amount;
+        stake_account_state.amount += input.amount;    
         stake_account_state.staked_at = clock.unix_timestamp;
         stake_account_state
     };
