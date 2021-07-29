@@ -4,7 +4,7 @@ use std::ops::Mul;
 use std::time::Duration;
 
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-use solana_program::clock::{UnixTimestamp};
+use solana_program::clock::UnixTimestamp;
 use solana_program::pubkey::Pubkey;
 use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
@@ -69,10 +69,9 @@ impl ViewerStake {
         }
     }
 
-    pub fn duration (&self) -> ApproximateSeconds {
+    pub fn duration(&self) -> ApproximateSeconds {
         self.staked_until - self.staked_at
     }
-
 }
 
 impl ViewerStakePool {

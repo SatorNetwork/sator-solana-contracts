@@ -11,7 +11,7 @@ use solana_sdk::{
 };
 use std::mem;
 
-use crate::{    
+use crate::{
     program_id,
     sdk::{
         program::PubkeyPatterns,

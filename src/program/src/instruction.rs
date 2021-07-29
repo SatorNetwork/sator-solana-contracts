@@ -22,7 +22,6 @@ pub struct StakeInput {
     pub amount: TokenAmount,
 }
 
-
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub enum Instruction {
     InitializeStakePool(InitializeStakePoolInput),
@@ -79,7 +78,7 @@ pub fn initialize_stake_pool(
 ///  * `clock`                      - *program, implicit*
 ///  * `spl_token`                  - *program, implicit*
 ///  * `user_wallet`                - *signer, payer*
-///  * `stake_pool`                 - account of stake pool used 
+///  * `stake_pool`                 - account of stake pool used
 ///  * `stake_authority`            - derived  as in [Instruction::InitializeStake]
 ///  * `token_account_source`       - *mutable*
 ///  * `token_account_stake_target` - *derived, mutable, implicit*
@@ -92,7 +91,7 @@ pub fn initialize_stake_pool(
 pub fn stake(
     wallet: &Pubkey,
     stake_pool: &Pubkey,
-    token_account_source: &TokenAccountPubkey,    
+    token_account_source: &TokenAccountPubkey,
     input: StakeInput,
 ) -> Result<(solana_program::instruction::Instruction, Pubkey), ProgramError> {
     let (stake_authority, _) = Pubkey::find_program_address_for_pubkey(stake_pool, &program_id());
@@ -117,7 +116,7 @@ pub fn stake(
                 AccountMeta::new_readonly(stake_authority, false),
                 AccountMeta::new(*token_account_source, false),
                 AccountMeta::new(token_account_stake_target, false),
-                AccountMeta::new(stake_account.0, false),                
+                AccountMeta::new(stake_account.0, false),
             ],
         ),
         stake_account.0,

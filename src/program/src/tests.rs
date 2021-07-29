@@ -1,4 +1,11 @@
-use crate::{instruction::StakeInput, sdk::program::PubkeyPatterns, spl_transactions, state::{ViewerStake, ViewerStakePool}, tests_helpers::*, transactions::{self, warp_seconds}};
+use crate::{
+    instruction::StakeInput,
+    sdk::program::PubkeyPatterns,
+    spl_transactions,
+    state::{ViewerStake, ViewerStakePool},
+    tests_helpers::*,
+    transactions::{self, warp_seconds},
+};
 use borsh::BorshDeserialize;
 use solana_program::native_token::sol_to_lamports;
 use solana_program_test::*;
@@ -68,7 +75,7 @@ async fn flow() {
         .unwrap();
 
     let minute = 60;
-    let hour = 60 * minute;    
+    let hour = 60 * minute;
     let amount = 1000;
 
     let (transaction, stake_pool) = initialize_stake(
@@ -77,19 +84,19 @@ async fn flow() {
         InitializeStakePoolInput {
             ranks: [
                 Rank {
-                    minimal_staking_time: 0,                    
+                    minimal_staking_time: 0,
                     amount,
                 },
                 Rank {
-                    minimal_staking_time: 1 * hour,                    
+                    minimal_staking_time: 1 * hour,
                     amount: amount * 2,
                 },
                 Rank {
-                    minimal_staking_time: 2 * hour,                    
+                    minimal_staking_time: 2 * hour,
                     amount: amount * 3,
                 },
                 Rank {
-                    minimal_staking_time: 3 * hour,                    
+                    minimal_staking_time: 3 * hour,
                     amount: amount * 4,
                 },
             ],
@@ -186,7 +193,7 @@ async fn flow() {
     let (transaction, stake_account) = transactions::stake(
         &user_wallet,
         &stake_pool.pubkey(),
-        &user_token_account,        
+        &user_token_account,
         StakeInput {
             amount: 1000,
             duration: stake_duration,
@@ -205,20 +212,16 @@ async fn flow() {
     let token_account_state =
         get_token_account_state(&mut client.banks_client, &token_account).await;
 
-    let viewer_stake_account
-    : ViewerStake = client
+    let viewer_stake_account: ViewerStake = client
         .banks_client
         .get_account_data_with_borsh(stake_account.pubkey())
         .await
         .unwrap();
     assert_eq!(
-        viewer_stake_account
-        .staked_until - viewer_stake_account
-        .staked_at,
+        viewer_stake_account.staked_until - viewer_stake_account.staked_at,
         stake_duration
     );
-    assert_eq!(viewer_stake_account
-        .amount, 1000);
+    assert_eq!(viewer_stake_account.amount, 1000);
 
     let transaction = transactions::unstake(
         &user_wallet,
@@ -234,60 +237,54 @@ async fn flow() {
         .await
         .expect_err("must fail to unlock");
 
-        let (transaction, _) = transactions::stake(
-            &user_wallet,
-            &stake_pool.pubkey(),
-            &user_token_account,            
-            StakeInput {
-                amount: 2000,
-                duration: stake_duration,
-            },
-            client.last_blockhash,
-        );
-    
-        client
-            .banks_client
-            .process_transaction(transaction)
-            .await
-            .unwrap();        
+    let (transaction, _) = transactions::stake(
+        &user_wallet,
+        &stake_pool.pubkey(),
+        &user_token_account,
+        StakeInput {
+            amount: 2000,
+            duration: stake_duration,
+        },
+        client.last_blockhash,
+    );
 
-            
-            let viewer_stake_account
-            : ViewerStake = client
+    client
+        .banks_client
+        .process_transaction(transaction)
+        .await
+        .unwrap();
+
+    let viewer_stake_account: ViewerStake = client
         .banks_client
         .get_account_data_with_borsh(stake_account.pubkey())
         .await
         .unwrap();
 
+    assert_eq!(
+        viewer_stake_account.staked_until - viewer_stake_account.staked_at,
+        stake_duration
+    );
+    assert_eq!(viewer_stake_account.amount, 3000);
 
-            assert_eq!(
-                viewer_stake_account.staked_until - viewer_stake_account.staked_at,
-                stake_duration
-            );
-            assert_eq!(viewer_stake_account
-                .amount, 3000);    
-            
-        warp_seconds(&mut client, 5 * hour).await;
+    warp_seconds(&mut client, 5 * hour).await;
 
-        let transaction = transactions::unstake(
-            &user_wallet,
-            &stake_pool.pubkey(),
-            &user_token_account,
-            &stake_pool_owner,
-            client.last_blockhash,
-        );
-    
-        client
-            .banks_client
-            .process_transaction(transaction)
-            .await
-            .unwrap();        
+    let transaction = transactions::unstake(
+        &user_wallet,
+        &stake_pool.pubkey(),
+        &user_token_account,
+        &stake_pool_owner,
+        client.last_blockhash,
+    );
 
-        client
-            .banks_client
-            .get_account_data_with_borsh::<ViewerStake>(stake_account.pubkey())
-            .await
-            .expect_err("account was burned");
-    
+    client
+        .banks_client
+        .process_transaction(transaction)
+        .await
+        .unwrap();
 
+    client
+        .banks_client
+        .get_account_data_with_borsh::<ViewerStake>(stake_account.pubkey())
+        .await
+        .expect_err("account was burned");
 }

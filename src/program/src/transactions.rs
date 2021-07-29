@@ -24,13 +24,17 @@ pub fn initialize_stake(
     recent_blockhash: solana_program::hash::Hash,
 ) -> (Transaction, Pubkey) {
     let stake = Keypair::new();
-    let mut transaction = Transaction::new_with_payer(
-        &[
-            crate::instruction::initialize_stake_pool(&owner.pubkey(), &stake.pubkey(), mint, input)
-                .expect("could create derived keys"),
-        ],
-        Some(&owner.pubkey()),
-    );
+    let mut transaction =
+        Transaction::new_with_payer(
+            &[crate::instruction::initialize_stake_pool(
+                &owner.pubkey(),
+                &stake.pubkey(),
+                mint,
+                input,
+            )
+            .expect("could create derived keys")],
+            Some(&owner.pubkey()),
+        );
     transaction.sign(&[owner, &stake], recent_blockhash);
     (transaction, stake.pubkey())
 }
@@ -38,13 +42,17 @@ pub fn initialize_stake(
 pub fn stake(
     user_wallet: &Keypair,
     stake_pool: &Pubkey,
-    token_account_source: &TokenAccountPubkey,    
+    token_account_source: &TokenAccountPubkey,
     input: StakeInput,
     recent_blockhash: solana_program::hash::Hash,
 ) -> (Transaction, Pubkey) {
-    let (instruction, stake) =
-        crate::instruction::stake(&user_wallet.pubkey(), stake_pool, token_account_source, input)
-            .expect("could create derived keys");
+    let (instruction, stake) = crate::instruction::stake(
+        &user_wallet.pubkey(),
+        stake_pool,
+        token_account_source,
+        input,
+    )
+    .expect("could create derived keys");
     let mut transaction = Transaction::new_with_payer(&[instruction], Some(&user_wallet.pubkey()));
     transaction.sign(&[user_wallet], recent_blockhash);
     (transaction, stake)
@@ -57,10 +65,15 @@ pub fn unstake(
     stake_pool_owner: &Keypair,
     recent_blockhash: solana_program::hash::Hash,
 ) -> Transaction {
-    let instruction=
-        crate::instruction::unstake(&wallet.pubkey(), stake_pool, token_account_target, &stake_pool_owner.pubkey())
-            .expect("could create derived keys");
-    let mut transaction = Transaction::new_with_payer(&[instruction], Some(&stake_pool_owner.pubkey()));
+    let instruction = crate::instruction::unstake(
+        &wallet.pubkey(),
+        stake_pool,
+        token_account_target,
+        &stake_pool_owner.pubkey(),
+    )
+    .expect("could create derived keys");
+    let mut transaction =
+        Transaction::new_with_payer(&[instruction], Some(&stake_pool_owner.pubkey()));
     transaction.sign(&[stake_pool_owner], recent_blockhash);
     transaction
 }

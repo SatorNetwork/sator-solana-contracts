@@ -140,7 +140,6 @@ pub fn is_derived(relation: Pubkey, related: &AccountInfo) -> ProgramResult {
     Ok(())
 }
 
-
 /// burns account
 pub fn burn_account(burned: &AccountInfo, beneficiary: &AccountInfo) {
     let mut from = burned.try_borrow_mut_lamports().unwrap();

@@ -12,16 +12,16 @@ use solana_program::{
 };
 
 use crate::instruction::Instruction;
-use crate::{program_id, errors};
 use crate::sdk::invoke::ProgramPubkeySignature;
-use crate::sdk::program::{AccountPatterns, PubkeyPatterns, burn_account, is_derived};
+use crate::sdk::program::{burn_account, is_derived, AccountPatterns, PubkeyPatterns};
 use crate::sdk::types::{ProgramPubkey, SignerPubkey};
 use crate::sdk::{
     borsh::{BorshDeserializeConst, BorshSerializeConst},
     invoke,
 };
 use crate::state::{StateVersion, ViewerStake, ViewerStakePool};
-use borsh::{BorshSerialize};
+use crate::{errors, program_id};
+use borsh::BorshSerialize;
 
 // Program entrypoint's implementation
 pub fn process_instruction(
@@ -66,7 +66,7 @@ pub fn process_instruction(
                         stake_authority,
                         token_account_source,
                         token_account_stake_target,
-                        stake_account,                        
+                        stake_account,
                         input,
                     )
                 }
@@ -110,7 +110,8 @@ fn initialize_stake<'a>(
 ) -> ProgramResult {
     owner.is_signer()?;
     stake_pool.is_signer()?;
-    let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake_pool)?;
+    let (stake_authority_pubkey, bump_seed, token_account_pubkey) =
+        derive_token_account(stake_pool)?;
 
     is_derived(stake_authority_pubkey, stake_authority)?;
     is_derived(token_account_pubkey, token_account)?;
@@ -186,19 +187,20 @@ fn stake<'a>(
     stake_authority: &AccountInfo<'a>,
     token_account_source: &AccountInfo<'a>,
     token_account_stake_target: &AccountInfo<'a>,
-    stake_account: &AccountInfo<'a>,    
+    stake_account: &AccountInfo<'a>,
     input: crate::instruction::StakeInput,
-) -> ProgramResult {    
-    user_wallet.is_signer()?;    
+) -> ProgramResult {
+    user_wallet.is_signer()?;
     stake_pool.is_owner(&program_id())?;
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     stake_pool_state.initialized()?;
-    let clock = Clock::from_account_info(clock)?;    
+    let clock = Clock::from_account_info(clock)?;
     if input.duration < stake_pool_state.ranks[0].minimal_staking_time {
         return errors::Error::StakeStakingTimeMustBeMoreThanMinimal.into();
     }
 
-    let (stake_authority_pubkey, bump_seed, token_account_pubkey) = derive_token_account(stake_pool)?;
+    let (stake_authority_pubkey, bump_seed, token_account_pubkey) =
+        derive_token_account(stake_pool)?;
 
     let (stake_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
@@ -211,7 +213,7 @@ fn stake<'a>(
     is_derived(stake_account_pubkey, stake_account)?;
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
-    let stake_account_state = if stake_account.data_is_empty() {        
+    let stake_account_state = if stake_account.data_is_empty() {
         let stake_account_state = ViewerStake {
             amount: input.amount,
             owner: user_wallet.pubkey(),
@@ -238,14 +240,14 @@ fn stake<'a>(
         stake_account.is_owner(&program_id())?;
         let mut stake_account_state = stake_account.deserialize::<ViewerStake>()?;
         stake_account_state.initialized()?;
-        
-        if input.duration < stake_account_state.duration(){
+
+        if input.duration < stake_account_state.duration() {
             return errors::Error::StakeStakingTimeMustBeMoreThanPrevious.into();
         }
 
         is_derived(stake_account_state.owner, user_wallet)?;
         stake_account_state.staked_until = clock.unix_timestamp + input.duration;
-        stake_account_state.amount += input.amount;    
+        stake_account_state.amount += input.amount;
         stake_account_state.staked_at = clock.unix_timestamp;
         stake_account_state
     };
@@ -271,12 +273,12 @@ fn unstake<'a>(
     token_account_stake_source: &AccountInfo<'a>,
     stake_account: &AccountInfo<'a>,
     stake_pool_owner: &AccountInfo<'a>,
-) -> ProgramResult {    
+) -> ProgramResult {
     let stake_account_state = stake_account.deserialize::<ViewerStake>()?;
     stake_account_state.initialized()?;
     stake_account.is_owner(&program_id())?;
     is_derived(stake_account_state.owner, wallet)?;
-    
+
     // as decided, right now admin dispatches instructions
     stake_pool_owner.is_signer()?;
     //wallet.is_signer()?;
@@ -285,7 +287,8 @@ fn unstake<'a>(
         return errors::Error::UnstakeCanBeDoneOnlyAfterStakeTimeLapsed.into();
     }
 
-    let (stake_authority_pubkey, bump_seed, token_account_stake_pubkey) = derive_token_account(stake_pool)?;
+    let (stake_authority_pubkey, bump_seed, token_account_stake_pubkey) =
+        derive_token_account(stake_pool)?;
     is_derived(token_account_stake_pubkey, token_account_stake_source)?;
 
     let (stake_account_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
@@ -297,12 +300,12 @@ fn unstake<'a>(
     is_derived(stake_account_pubkey, stake_account)?;
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
-    
+
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
-    
+
     // as discussed, unstaking will not give multiplier reward
     // let reward_amount = stake_pool_state.calculate_reward(stake_account_state)?;
-        
+
     invoke::spl_token_transfer_signed(
         spl_token,
         token_account_stake_source,
@@ -311,7 +314,7 @@ fn unstake<'a>(
         stake_account_state.amount,
         &authority_signature,
     )?;
-    
+
     burn_account(stake_account, stake_pool_owner);
     //burn_account(stake_account, wallet);
 
