@@ -12,7 +12,7 @@ use std::mem;
 
 use crate::{
     instruction::{InitializeStakePoolInput, StakeInput},
-    program_id,
+    stake_viewer_program_id,
     sdk::types::{ApproximateSeconds, MintPubkey, TokenAccountPubkey},
     state,
 };

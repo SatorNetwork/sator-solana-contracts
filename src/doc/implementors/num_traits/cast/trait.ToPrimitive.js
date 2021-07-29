@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["sator_stake_viewer"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/num-traits/0.2/num_traits/cast/trait.ToPrimitive.html\" title=\"trait num_traits::cast::ToPrimitive\">ToPrimitive</a> for <a class=\"enum\" href=\"sator_stake_viewer/error/enum.Error.html\" title=\"enum sator_stake_viewer::error::Error\">Error</a>","synthetic":false,"types":["sator_stake_viewer::error::Error"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

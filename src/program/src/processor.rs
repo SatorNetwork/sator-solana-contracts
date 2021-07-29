@@ -20,7 +20,7 @@ use crate::sdk::{
     invoke,
 };
 use crate::state::{StateVersion, ViewerStake, ViewerStakePool};
-use crate::{errors, program_id};
+use crate::{errors, stake_viewer_program_id};
 use borsh::BorshSerialize;
 
 // Program entrypoint's implementation
@@ -173,7 +173,7 @@ fn derive_token_account(stake: &AccountInfo) -> Result<(Pubkey, u8, Pubkey), Pro
 
 fn derive_stake_authority_account(stake: &AccountInfo) -> (Pubkey, u8) {
     let (stake_authority_pubkey, bump_seed) =
-        Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::program_id());
+        Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::stake_viewer_program_id());
     (stake_authority_pubkey, bump_seed)
 }
 
@@ -191,7 +191,7 @@ fn stake<'a>(
     input: crate::instruction::StakeInput,
 ) -> ProgramResult {
     user_wallet.is_signer()?;
-    stake_pool.is_owner(&program_id())?;
+    stake_pool.is_owner(&stake_viewer_program_id())?;
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     stake_pool_state.initialized()?;
     let clock = Clock::from_account_info(clock)?;
@@ -205,7 +205,7 @@ fn stake<'a>(
     let (stake_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
         &user_wallet.pubkey(),
-        &program_id(),
+        &stake_viewer_program_id(),
     )?;
 
     is_derived(stake_authority_pubkey, stake_authority)?;
@@ -231,13 +231,13 @@ fn stake<'a>(
             seed,
             lamports,
             ViewerStake::LEN as u64,
-            &program_id(),
+            &stake_viewer_program_id(),
             bump_seed,
             &authority_signature,
         )?;
         stake_account_state
     } else {
-        stake_account.is_owner(&program_id())?;
+        stake_account.is_owner(&stake_viewer_program_id())?;
         let mut stake_account_state = stake_account.deserialize::<ViewerStake>()?;
         stake_account_state.initialized()?;
 
@@ -276,7 +276,7 @@ fn unstake<'a>(
 ) -> ProgramResult {
     let stake_account_state = stake_account.deserialize::<ViewerStake>()?;
     stake_account_state.initialized()?;
-    stake_account.is_owner(&program_id())?;
+    stake_account.is_owner(&stake_viewer_program_id())?;
     is_derived(stake_account_state.owner, wallet)?;
 
     // as decided, right now admin dispatches instructions
@@ -294,7 +294,7 @@ fn unstake<'a>(
     let (stake_account_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
         &wallet.pubkey(),
-        &program_id(),
+        &stake_viewer_program_id(),
     )?;
 
     is_derived(stake_account_pubkey, stake_account)?;

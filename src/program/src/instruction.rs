@@ -8,7 +8,7 @@ use solana_program::{system_program, sysvar};
 
 use crate::sdk::program::PubkeyPatterns;
 use crate::sdk::types::*;
-use crate::{program_id, state, types::*};
+use crate::{stake_viewer_program_id, state, types::*};
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct InitializeStakePoolInput {
@@ -21,6 +21,7 @@ pub struct StakeInput {
     pub duration: ApproximateSeconds,
     pub amount: TokenAmount,
 }
+
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub enum Instruction {
@@ -47,7 +48,7 @@ pub fn initialize_stake_pool(
     mint: &MintPubkey,
     input: InitializeStakePoolInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
-    let stake_authority = Pubkey::find_program_address_for_pubkey(stake_pool, &program_id());
+    let stake_authority = Pubkey::find_program_address_for_pubkey(stake_pool, &stake_viewer_program_id());
     let token_account = Pubkey::create_with_seed(
         &stake_authority.0,
         "ViewerStakePool::token_account",
@@ -78,7 +79,7 @@ pub fn initialize_stake_pool(
 ///  * `clock`                      - *program, implicit*
 ///  * `spl_token`                  - *program, implicit*
 ///  * `user_wallet`                - *signer, payer*
-///  * `stake_pool`                 - account of stake pool used
+///  * `stake_pool`                 - account of stake pool used 
 ///  * `stake_authority`            - derived  as in [Instruction::InitializeStake]
 ///  * `token_account_source`       - *mutable*
 ///  * `token_account_stake_target` - *derived, mutable, implicit*
@@ -91,17 +92,18 @@ pub fn initialize_stake_pool(
 pub fn stake(
     wallet: &Pubkey,
     stake_pool: &Pubkey,
-    token_account_source: &TokenAccountPubkey,
+    token_account_source: &TokenAccountPubkey,    
     input: StakeInput,
 ) -> Result<(solana_program::instruction::Instruction, Pubkey), ProgramError> {
-    let (stake_authority, _) = Pubkey::find_program_address_for_pubkey(stake_pool, &program_id());
+    let (stake_authority, _) = Pubkey::find_program_address_for_pubkey(stake_pool, &stake_viewer_program_id());
     let token_account_stake_target = Pubkey::create_with_seed(
         &stake_authority,
         "ViewerStakePool::token_account",
         &spl_token::id(),
     )?;
+
     let stake_account =
-        Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &program_id())?;
+        Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &stake_viewer_program_id())?;
     Ok((
         solana_program::instruction::Instruction::new_with_borsh(
             crate::id(),
@@ -116,7 +118,7 @@ pub fn stake(
                 AccountMeta::new_readonly(stake_authority, false),
                 AccountMeta::new(*token_account_source, false),
                 AccountMeta::new(token_account_stake_target, false),
-                AccountMeta::new(stake_account.0, false),
+                AccountMeta::new(stake_account.0, false),                
             ],
         ),
         stake_account.0,
@@ -142,14 +144,14 @@ pub fn unstake(
     token_account_target: &TokenAccountPubkey,
     stake_pool_owner: &SignerPubkey,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
-    let (stake_authority, _) = Pubkey::find_program_address_for_pubkey(stake_pool, &program_id());
+    let (stake_authority, _) = Pubkey::find_program_address_for_pubkey(stake_pool, &stake_viewer_program_id());
     let token_account_stake_source = Pubkey::create_with_seed(
         &stake_authority,
         "ViewerStakePool::token_account",
         &spl_token::id(),
     )?;
     let stake_account =
-        Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &program_id())?;
+        Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &stake_viewer_program_id())?;
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
         &Instruction::Unstake,

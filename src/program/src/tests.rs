@@ -19,14 +19,14 @@ use solana_sdk::{
 use std::mem;
 
 use crate::{
-    instruction::InitializeStakePoolInput, processor::process_instruction, program_id,
+    instruction::InitializeStakePoolInput, processor::process_instruction, stake_viewer_program_id,
     spl_transactions::create_initialize_mint, state, transactions::initialize_stake, types::Rank,
 };
 
 pub fn new_program_test() -> ProgramTest {
     let mut program_test = ProgramTest::new(
         "sator_stake_viewer",
-        program_id(),
+        stake_viewer_program_id(),
         processor!(process_instruction),
     );
     program_test.add_program("spl_token", spl_token::id(), None);
@@ -111,7 +111,7 @@ async fn flow() {
         .unwrap();
 
     let stake_authority =
-        Pubkey::find_program_address_for_pubkey(&stake_pool.pubkey(), &crate::program_id());
+        Pubkey::find_program_address_for_pubkey(&stake_pool.pubkey(), &crate::stake_viewer_program_id());
     let token_account = Pubkey::create_with_seed(
         &stake_authority.0,
         "ViewerStakePool::token_account",

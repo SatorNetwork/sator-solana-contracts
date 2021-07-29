@@ -8,6 +8,21 @@
 //! - `stake_authority` is derived operations are signed by on chain stake derived signature
 //! - `stake_pool` `token_account` is derived from and owned by `stake_authority`
 //! - `stake_account` for each user is derived
+//!```txt
+//! let stake_pool = Pubkey::new_unique();
+//! let (stake_authority, _) = Pubkey::find_program_address(&[&stake_pool.to_bytes()[..32]], &stake_viewer_program_id());
+//! let token_account_stake_target = Pubkey::create_with_seed(
+//!     &stake_authority,
+//!     "ViewerStakePool::token_account",
+//!     &spl_token::id(),
+//! );
+//! // Pubkey.to_string is longer than 32 chars limit in Solana for seed
+//! // ETH compatible something
+//! let seed = wallet.to_bytes();
+//! let seed = bs58::encode(&seed[..20]).into_string();
+//! let stake_account = Pubkey::create_with_seed(stake_authority, &seed, &stake_viewer_program_id());
+//!```
+
 pub mod entrypoint;
 pub mod errors;
 pub mod instruction;
@@ -34,6 +49,6 @@ use state::*;
 
 solana_program::declare_id!("CL9tjeJL38C3eWqd6g7iHMnXaJ17tmL2ygkLEHghrj4u");
 
-pub fn program_id() -> ProgramPubkey {
+pub fn stake_viewer_program_id() -> ProgramPubkey {    
     crate::id()
 }

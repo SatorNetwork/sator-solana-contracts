@@ -12,7 +12,7 @@ use solana_sdk::{
 use std::mem;
 
 use crate::{
-    program_id,
+    stake_viewer_program_id,
     sdk::{
         program::PubkeyPatterns,
         types::{Lamports, MintPubkey, TokenAccountPubkey},
