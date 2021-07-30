@@ -27,7 +27,6 @@ pub mod entrypoint;
 pub mod errors;
 pub mod instruction;
 mod processor;
-pub mod sdk;
 pub mod state;
 #[cfg(all(feature = "test-bpf", test))]
 mod tests;
@@ -43,7 +42,8 @@ mod spl_transactions;
 #[cfg(test)]
 mod tests_helpers;
 
-use sdk::types::ProgramPubkey;
+
+use sator_sdk::types::ProgramPubkey;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 use state::*;
 

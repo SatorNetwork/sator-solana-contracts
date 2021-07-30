@@ -2,7 +2,7 @@ use solana_program::{program_pack::Pack, pubkey::Pubkey};
 use solana_program_test::{BanksClient, ProgramTestContext};
 use solana_sdk::account::Account;
 
-use crate::sdk::program::PubkeyPatterns;
+use sator_sdk::program::PubkeyPatterns;
 
 pub async fn get_token_account_state(
     client: &mut BanksClient,

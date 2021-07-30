@@ -1,13 +1,13 @@
 //! Program owned state
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use sator_sdk::program::PubkeyPatterns;
+use sator_sdk::types::{ApproximateSeconds, MintPubkey, SignerPubkey, TokenAccountPubkey, TokenAmount};
 use solana_program::clock::UnixTimestamp;
 use solana_program::instruction::AccountMeta;
 use solana_program::pubkey::Pubkey;
 use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 use solana_program::{system_program, sysvar};
 
-use crate::sdk::program::PubkeyPatterns;
-use crate::sdk::types::*;
 use crate::{stake_viewer_program_id, state, types::*};
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]

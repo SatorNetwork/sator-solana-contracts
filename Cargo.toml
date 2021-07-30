@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "stake-viewer/cli",
+    "stake-viewer/program",
+    "sator-sdk"
+ ]
+resolver = "2" 

@@ -1,11 +1,10 @@
 //! In program helpers
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::{BorshDeserialize,};
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::{Pubkey, PubkeyError},
-    system_instruction,
 };
 
 use super::types::*;

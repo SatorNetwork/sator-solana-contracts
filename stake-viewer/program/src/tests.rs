@@ -1,20 +1,21 @@
 use crate::{
-    instruction::StakeInput,
-    sdk::program::PubkeyPatterns,
+    instruction::StakeInput,    
     spl_transactions,
     state::{ViewerStake, ViewerStakePool},
     tests_helpers::*,
     transactions::{self, warp_seconds},
 };
 use borsh::BorshDeserialize;
+use sator_sdk::program::PubkeyPatterns;
 use solana_program::native_token::sol_to_lamports;
 use solana_program_test::*;
-use solana_sdk::{
+use solana_sdk::{    
     account::Account,
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
     signature::{Keypair, Signer},
     transaction::Transaction,
+    program::*,
 };
 use std::mem;
 

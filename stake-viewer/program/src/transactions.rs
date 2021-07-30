@@ -1,4 +1,6 @@
 use borsh::BorshDeserialize;
+use sator_sdk::types::*;
+use sator_sdk::program::*;
 use solana_program::{clock::Clock, system_instruction};
 use solana_program_test::*;
 use solana_sdk::{
@@ -6,14 +8,14 @@ use solana_sdk::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
     signature::{Keypair, Signer},
-    transaction::Transaction,
+    transaction::Transaction,    
 };
 use std::mem;
 
+
 use crate::{
     instruction::{InitializeStakePoolInput, StakeInput},
-    stake_viewer_program_id,
-    sdk::types::{ApproximateSeconds, MintPubkey, TokenAccountPubkey},
+    stake_viewer_program_id,    
     state,
 };
 

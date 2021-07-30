@@ -11,7 +11,7 @@ use spl_token::instruction::initialize_account;
 
 use super::{
     program::{AccountPatterns, PubkeyPatterns},
-    types::{MintPubkey, ProgramPubkey},
+    types::{ ProgramPubkey},
 };
 
 /// Creates system account externally signed
@@ -86,8 +86,7 @@ pub fn create_account_with_seed_signed<'a>(
     seed: String,
     lamports: u64,
     space: u64,
-    program_owner: &ProgramPubkey,
-    bump_seed: u8,
+    program_owner: &ProgramPubkey,    
     signers_seeds: &ProgramPubkeySignature,
 ) -> ProgramResult {
     let instruction = &system_instruction::create_account_with_seed(
@@ -107,22 +106,6 @@ pub fn create_account_with_seed_signed<'a>(
     )
 }
 
-/// Initialize token account
-pub fn initialize_token_account<'a>(
-    account_to_initialize: AccountInfo<'a>,
-    mint: AccountInfo<'a>,
-    owner: AccountInfo<'a>,
-) -> ProgramResult {
-    invoke(
-        &initialize_account(
-            &spl_token::id(),
-            &account_to_initialize.key,
-            mint.key,
-            owner.key,
-        )?,
-        &[account_to_initialize, mint, owner],
-    )
-}
 
 /// Initialize mint
 pub fn initialize_mint<'a>(
@@ -313,7 +296,6 @@ pub fn initialize_token_account_signed<'a>(
     mint: &AccountInfo<'a>,
     owner: &AccountInfo<'a>,
     rent_account: &AccountInfo<'a>,
-    bump_seed: u8,
     signers_seeds: &ProgramPubkeySignature,
 ) -> ProgramResult {
     let instruction = &spl_token::instruction::initialize_account(
