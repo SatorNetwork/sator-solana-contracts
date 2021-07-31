@@ -45,7 +45,6 @@ mod tests_helpers;
 
 use sator_sdk::types::ProgramPubkey;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
-use state::*;
 
 solana_program::declare_id!("CL9tjeJL38C3eWqd6g7iHMnXaJ17tmL2ygkLEHghrj4u");
 

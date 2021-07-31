@@ -2,6 +2,7 @@
 members = [
     "stake-viewer/cli",
     "stake-viewer/program",
-    "sator-sdk"
+    "sator-sdk",
+    "sator-reward/program",
  ]
-resolver = "2" 
+# resolver = "2" 

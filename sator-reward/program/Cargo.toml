@@ -1,7 +1,8 @@
+
 [package]
-name = "sator-stake-viewer"
+name = "sator-reward"
 version = "0.0.1"
-description = "Solana contract for stacking viewer tokens"
+description = "Solana contract for for sator rewards"
 edition = "2018"
 
 [features]

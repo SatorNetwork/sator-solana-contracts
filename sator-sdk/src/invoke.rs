@@ -7,7 +7,6 @@ use solana_program::{
     pubkey::Pubkey,
     system_instruction,
 };
-use spl_token::instruction::initialize_account;
 
 use super::{
     program::{AccountPatterns, PubkeyPatterns},
