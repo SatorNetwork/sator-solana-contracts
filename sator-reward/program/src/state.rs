@@ -55,7 +55,7 @@ pub struct Quiz {
 
 
 impl Show {
-    pub const LEN: usize = 57;
+    pub const LEN: usize = 43;
 
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
@@ -75,7 +75,7 @@ impl Show {
 }
 
 impl UserKyk {
-    pub const LEN: usize = 97;
+    pub const LEN: usize = 1;
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
             Ok(())
@@ -94,7 +94,7 @@ impl UserKyk {
 }
 
 impl Quiz {
-    pub const LEN: usize = 97;
+    pub const LEN: usize = 184;
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
             Ok(())
