@@ -10,7 +10,7 @@ use solana_program::clock::UnixTimestamp;
 use solana_program::pubkey::Pubkey;
 use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
-
+use crate::types::Winner;
 
 
 /// show reward pool, used to derive Show::token_account
@@ -21,27 +21,18 @@ pub struct Show {
     /// period after which user can claim reward
     pub lock_time: ApproximateSeconds,
     /// next quiz index
-    pub index: u16,
-    
-    //  owner of the show
+    pub index: u16,    
+    ///  owner of the show
     pub owner: SignerPubkey,
 }
-
-
 
 /// derived from wallet + show
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
-pub struct UserKyk {        
+pub struct Viewer {        
     pub version: StateVersion,
 }
 
-#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
-pub struct Winner {    
-    pub wallet: Pubkey,
-    pub points: u16,
-    pub claimed: bool,
-}
 
 /// Up to N winners with points, derived from show + counter. '
 /// Prise pool is sum of tokens.
@@ -74,7 +65,7 @@ impl Show {
     }
 }
 
-impl UserKyk {
+impl Viewer {
     pub const LEN: usize = 1;
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
@@ -123,7 +114,7 @@ mod tests {
         assert_eq!(data.len(), Quiz::LEN);
         let data = Show::default().try_to_vec().unwrap();
         assert_eq!(data.len(), Show::LEN);
-        let data = UserKyk::default().try_to_vec().unwrap();
-        assert_eq!(data.len(), UserKyk::LEN);
+        let data = Viewer::default().try_to_vec().unwrap();
+        assert_eq!(data.len(), Viewer::LEN);
     }
 }

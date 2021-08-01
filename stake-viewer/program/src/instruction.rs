@@ -1,4 +1,4 @@
-//! Program owned state
+//! Program instruction state
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use sator_sdk::program::PubkeyPatterns;
 use sator_sdk::types::{ApproximateSeconds, MintPubkey, SignerPubkey, TokenAccountPubkey, TokenAmount};

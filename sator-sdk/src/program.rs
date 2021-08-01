@@ -23,6 +23,13 @@ pub trait PubkeyPatterns {
         owner: &ProgramPubkey,
     ) -> Result<(ProgramDerivedPubkey, String), PubkeyError>;
 
+    fn create_with_seed_index(
+        base: &Pubkey,
+        seed: &str,
+        seed_index: u64,
+        owner: &ProgramPubkey,
+    ) -> Result<(ProgramDerivedPubkey, String), PubkeyError>;
+
     /// Generate certain program address
     fn find_program_address_for_pubkeys<'a>(
         a: &Pubkey,
@@ -51,6 +58,17 @@ impl PubkeyPatterns for Pubkey {
         // ETH compatible something
         let seed = seed.to_bytes();
         let seed = bs58::encode(&seed[..20]).into_string();
+        let pubkey = Pubkey::create_with_seed(base, &seed, owner)?;
+        Ok((pubkey, seed))
+    }
+
+    fn create_with_seed_index(
+        base: &Pubkey,
+        seed: &str,
+        seed_index: u64,
+        owner: &ProgramPubkey,
+    ) -> Result<(ProgramDerivedPubkey, String), PubkeyError> {
+        let seed = format!("{}{:?}", seed, seed_index);        
         let pubkey = Pubkey::create_with_seed(base, &seed, owner)?;
         Ok((pubkey, seed))
     }
