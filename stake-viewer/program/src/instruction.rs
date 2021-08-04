@@ -25,8 +25,11 @@ pub struct StakeInput {
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub enum Instruction {
+    //0[(i64,u64),(i64,u64),(i64,u64),(i64,u64)]
     InitializeStakePool(InitializeStakePoolInput),
+    //1
     Stake(StakeInput),
+    //2
     Unstake,
 }
 
