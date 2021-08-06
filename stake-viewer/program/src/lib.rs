@@ -8,7 +8,7 @@
 //! - `stake_authority` is derived operations are signed by on chain stake derived signature
 //! - `stake_pool`'s `token_account` is derived from and owned by `stake_authority`
 //! - `stake_account` for each user is derived
-//!```txt
+//!```rust, ignore
 //! let stake_pool = Pubkey::new_unique();
 //! let (stake_authority, _) = Pubkey::find_program_address(&[&stake_pool.to_bytes()[..32]], &stake_viewer_program_id());
 //! let token_account_stake_target = Pubkey::create_with_seed(

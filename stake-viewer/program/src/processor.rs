@@ -271,12 +271,16 @@ fn unstake<'a>(
     stake_pool_owner: &AccountInfo<'a>,
 ) -> ProgramResult {
     let stake_account_state = stake_account.deserialize::<ViewerStake>()?;
+    let viewer_stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     stake_account_state.initialized()?;
     stake_account.is_owner(&stake_viewer_program_id())?;
+    
     is_derived(stake_account_state.owner, wallet)?;
 
     // as decided, right now admin dispatches instructions
+    // could do admin OR wallet
     stake_pool_owner.is_signer()?;
+    is_derived(viewer_stake_pool_state.owner, stake_pool_owner)?;
     //wallet.is_signer()?;
     let clock = Clock::from_account_info(clock)?;
     if stake_account_state.staked_until > clock.unix_timestamp {
