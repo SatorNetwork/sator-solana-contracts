@@ -40,8 +40,8 @@ pub enum Instruction {
 ///  * `sysvar_rent`     - *program, implicit* ensure that `token_account` and  `stake_pool` are rent exempt.
 ///  * `spl_token`       - *program, implicit* spl token program to initialize `token_account`.
 ///  * `owner`           - *signer, payer* and owner of `stake_pool`.
-///  * `stake_pool`       - *mutable, signer* not initialized not created account for stake data.
-///  * `stake_authority` - *implicit* program derived account from `32 bytes stake public key` based `program_id`.
+///  * `stake_pool`      - *mutable, signer* not initialized not created account for stake data.
+///  * `stake_authority` - *implicit, derived* program derived account from `32 bytes stake public key` based `program_id`.
 ///  * `token_account`   - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `stake_authority`.
 ///  * `mint`            - used to initialize `token_account` for reference
 #[allow(clippy::too_many_arguments)]
@@ -83,7 +83,7 @@ pub fn initialize_stake_pool(
 ///  * `spl_token`                  - *program, implicit*
 ///  * `user_wallet`                - *signer, payer*
 ///  * `stake_pool`                 - account of stake pool used 
-///  * `stake_authority`            - derived  as in [Instruction::InitializeStake]
+///  * `stake_authority`            - *derived*  as in [Instruction::InitializeStake]
 ///  * `token_account_source`       - *mutable*
 ///  * `token_account_stake_target` - *derived, mutable, implicit*
 ///  * `stake_account`              - *implicit, derived, mutable* from `wallet` and `stake_authority`
