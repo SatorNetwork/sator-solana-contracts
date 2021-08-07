@@ -78,18 +78,19 @@ pub fn initialize_show(
 /// Accounts:
 ///  * `system_program`  - *program, implicit* to create accounts
 ///  * `sysvar_rent`     - *program, implicit* ensure that `token_account` and  `show` are rent exempt.
-///  * `owner`           - *signer, payer*  owner of`show`
+///  * `owner`           - *signer, payer*  owner of `show`
 ///  * `show`            - used to validate `owner`
 ///  * `show_authority` - *implicit* program derived account from `32 bytes show public key` based `program_id`.
+///  * `viewer`         - *implicit, derived* from `show_authority` and `input.user_wallet`
 #[allow(clippy::too_many_arguments)]
 pub fn initialize_viewer(
     owner: &SignerPubkey,
     show: &Pubkey,
     input: InitializeViewerInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
-    let show_authority = Pubkey::find_program_address_for_pubkey(show, &program_id());
-    let (viewer, _) = Pubkey::create_with_seed_for_pubkey(
-        &show_authority.0,
+    let (show_authority_pubkey, _) = Pubkey::find_program_address_for_pubkey(&show.pubkey(), &program_id());
+    let (viewer_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
+        &show_authority_pubkey,
         &input.user_wallet,
         &program_id(),
     )?;
@@ -101,8 +102,8 @@ pub fn initialize_viewer(
             AccountMeta::new_readonly(sysvar::rent::id(), false),            
             AccountMeta::new_readonly(*owner, true),
             AccountMeta::new_readonly(*show, false),
-            AccountMeta::new_readonly(show_authority.0, false),
-            AccountMeta::new(viewer, false),            
+            AccountMeta::new_readonly(show_authority_pubkey, false),
+            AccountMeta::new(viewer_pubkey, false),            
         ],
     ))
 }
@@ -116,10 +117,12 @@ pub struct InitializeQuizInput {
 
 
 /// Creates [Instruction::InitializeQuiz] instruction which initializes `quiz` with results. Validates winner is viewer.
+/// `show`'s `quizes` latest number must be provided.
 ///
 /// Accounts:
 ///  * `system_program`  - *program, implicit* to create accounts
 ///  * `sysvar_rent`     - *program, implicit* ensure that `quiz` are rent exempt.
+///  * `clock`           - *program, implicit* to calculate prize won time
 ///  * `show`            - used to validate `owner` and `quiz` and tak 
 ///  * `owner`           - *signer, payer* and owner of `show`.
 ///  * `show_authority` - *implicit* program derived account from `32 bytes show public key` based `program_id`.
@@ -133,9 +136,9 @@ pub fn initialize_quiz(
     winners: Vec<Pubkey>,
     input: InitializeQuizInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
-    let show_authority = Pubkey::find_program_address_for_pubkey(show, &program_id());
-    let (quiz, _) = Pubkey::create_with_seed_index(
-        &show_authority.0,
+    let (show_authority_pubkey, _) = Pubkey::find_program_address_for_pubkey(show, &program_id());
+    let (quiz_pubkey, _) = Pubkey::create_with_seed_index(
+        &show_authority_pubkey,
         "Show::quizes",
         quizes as u64,
         &program_id(),
@@ -149,8 +152,8 @@ pub fn initialize_quiz(
             AccountMeta::new_readonly(sysvar::rent::id(), false),                        
             AccountMeta::new_readonly(*owner, true),
             AccountMeta::new(*show, false),
-            AccountMeta::new_readonly(show_authority.0, false),
-            AccountMeta::new(quiz, false),            
+            AccountMeta::new_readonly(show_authority_pubkey, false),
+            AccountMeta::new(quiz_pubkey, false),            
         ], winners].concat(),
     ))
 }

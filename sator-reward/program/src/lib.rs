@@ -6,6 +6,7 @@ mod processor;
 pub mod state;
 pub mod instructions;
 pub mod types;
+pub mod errors;
 
 use sator_sdk::types::ProgramPubkey;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};

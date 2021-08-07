@@ -21,7 +21,7 @@ pub struct Show {
     /// period after which user can claim reward
     pub lock_time: ApproximateSeconds,
     /// next quiz index
-    pub index: u16,    
+    pub quizes_len: u16,    
     ///  owner of the show
     pub owner: SignerPubkey,
 }
@@ -40,7 +40,7 @@ pub struct Viewer {
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct Quiz {  
     pub version: StateVersion,      
-    pub winnwers: [Winner; 5],
+    pub winners: [Winner; 5],
     pub locked_until: UnixTimestamp,
 }
 
@@ -48,6 +48,8 @@ pub struct Quiz {
 impl Show {
     pub const LEN: usize = 43;
     pub const token_account: &'static str = "Show::token_account";
+    pub const quizes: &'static str = "Show::quizes";
+    
 
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {

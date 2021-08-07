@@ -12,7 +12,7 @@ use solana_program::pubkey::Pubkey;
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone, Copy)]
 pub struct Winner {    
-    pub wallet: Pubkey,
+    pub user_wallet: Pubkey,
     pub points: u16,
     pub claimed: bool,
 }

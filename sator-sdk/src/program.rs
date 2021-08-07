@@ -164,3 +164,19 @@ pub fn burn_account(burned: &AccountInfo, beneficiary: &AccountInfo) {
     **to += **from;
     **from = 0;
 }
+
+
+/// check that some `owner` field on `account_state` is equals `owner_pubkey`(each pubkey has `pubkey()`).
+/// (structural typing)
+#[macro_export]
+macro_rules! is_owner {
+    (
+        $owner_pubkey:expr,
+        $account_state:expr
+    )
+    => {
+        if $account_state.owner != $owner_pubkey.pubkey() {
+            return Err(ProgramError::IllegalOwner);
+        }
+    }
+}

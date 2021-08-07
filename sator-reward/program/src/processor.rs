@@ -1,9 +1,14 @@
 use std::borrow::Borrow;
+use std::collections::hash_map::{DefaultHasher, RandomState};
+use std::collections::{HashMap, HashSet};
+use std::convert::TryInto;
 use std::error::Error;
+use std::hash::BuildHasher;
 
 use sator_sdk::invoke::{self, ProgramPubkeySignature};
 use sator_sdk::borsh::*;
-use sator_sdk::program::*;
+use sator_sdk::is_owner;
+use sator_sdk::program::{*};
 use sator_sdk::state::StateVersion;
 use sator_sdk::types::*;
 use solana_program::clock::Clock;
@@ -16,8 +21,10 @@ use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
 };
 
-use crate::instructions::Instruction;
+
+use crate::instructions::{InitializeQuizInput, InitializeViewerInput, Instruction};
 use crate::state::*;
+use crate::types::Winner;
 use borsh::{BorshSerialize, BorshDeserialize};
 
 
@@ -55,10 +62,164 @@ pub fn process_instruction(
             }
             
         }
-        Instruction::InitializeViewer(_) => todo!(),
-        Instruction::InitializeQuiz(_) => todo!(),
+        Instruction::InitializeViewer(input) => {
+            match accounts {
+                [
+system_program,
+sysvar_rent,
+owner,
+show,
+show_authority,
+viewer,
+..
+                ] => initialize_viewer(
+                    program_id,
+                    system_program,
+                    sysvar_rent,
+                    owner,
+                    show,
+                    show_authority,
+                    viewer,                    
+                    input,
+                ),
+                _ => Err(ProgramError::NotEnoughAccountKeys)
+            }
+        },
+        Instruction::InitializeQuiz(input) => 
+        match accounts {
+            [
+                system_program,
+                sysvar_rent,
+                clock,
+                show,
+                owner,
+                show_authority,
+                quiz,                
+                ..,                
+            ] => {
+                let winners = accounts.iter().skip(6);
+                initialize_winners(
+                    program_id,
+                    system_program,
+                    sysvar_rent,
+                    clock,
+                    show,
+                    owner,
+                    show_authority,
+                    quiz,      
+                    winners,
+                    input,                              
+                )
+            },
+            _ => Err(ProgramError::NotEnoughAccountKeys)
+        }
         Instruction::Claim => todo!(),
     }
+}
+
+fn initialize_winners<'a>(program_id: &Pubkey, system_program: &AccountInfo<'a>, sysvar_rent: &AccountInfo<'a>, clock: &AccountInfo<'a>, show: &AccountInfo<'a>, owner: &AccountInfo<'a>, show_authority: &AccountInfo<'a>, quiz: &AccountInfo<'a>, winners: std::iter::Skip<std::slice::Iter<AccountInfo<'a>>>, input:InitializeQuizInput) -> Result<(), ProgramError> {
+    let mut show_state = show.deserialize::<Show>()?;
+    
+    show_state.uninitialized()?;
+    is_owner!(owner, show_state);
+    owner.is_signer()?;
+
+    let (show_authority_pubkey, bump_seed) = Pubkey::find_program_address_for_pubkey(&show.pubkey(), program_id);
+    let (quiz_pubkey, seed) = Pubkey::create_with_seed_index(
+        &show_authority_pubkey,
+        Show::quizes,
+        show_state.quizes_len as u64,
+        &program_id,
+    )?;
+    is_derived(show_authority_pubkey, show_authority)?;
+    is_derived(quiz_pubkey, quiz)?;
+
+    let authority_signature = ProgramPubkeySignature::new(show_authority, bump_seed);    
+    let rent_state = Rent::from_account_info(sysvar_rent)?;
+    let lamports = rent_state.minimum_balance(Quiz::LEN);
+
+    invoke::create_account_with_seed_signed(
+        system_program,
+        &owner, 
+        &quiz,
+        show_authority,
+        &seed[..],
+        lamports,
+        Quiz::LEN as u64,
+        program_id,            
+        &authority_signature,
+    )?;    
+
+    let mut quiz_state = quiz.deserialize::<Quiz>()?;
+    quiz_state.initialized()?;
+    quiz_state.winners = input.winners;
+    let mut winners_pubkeys = Vec::new();
+    for winner in quiz_state.winners.iter() {
+        winners_pubkeys.push(winner.user_wallet);
+    }
+
+    for winner in winners{
+        let (viewer_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
+            &show_authority_pubkey,
+            &winner.pubkey(),
+            &program_id,
+        )?;
+        let viewer = winner.deserialize::<Viewer>()?;
+        winner.is_owner(program_id)?;
+        viewer.initialized()?;
+
+        if !(winners_pubkeys.contains(&winner.pubkey())) {
+            return Err(crate::errors::Error::InitializeQuizWinnerIsNotInList.into());
+        }
+
+    }
+
+    let clock = Clock::from_account_info(clock)?;
+    quiz_state.locked_until = clock.unix_timestamp + show_state.lock_time;
+    quiz_state.serialize_const(&mut *quiz.try_borrow_mut_data()?)?;
+
+    show_state.quizes_len +=1;
+    show_state.serialize_const(&mut *show.try_borrow_mut_data()?)?;
+
+    Ok(())
+
+}
+
+fn initialize_viewer<'a>(program_id: &Pubkey, system_program: &AccountInfo<'a>, sysvar_rent: &AccountInfo<'a>, owner: &AccountInfo<'a>, show: &AccountInfo<'a>, show_authority: &AccountInfo<'a>, viewer: &AccountInfo<'a>, input: InitializeViewerInput) -> Result<(), ProgramError> {
+    let show_state = show.deserialize::<Show>()?;
+    show_state.uninitialized()?;
+    is_owner!(owner, show_state);
+
+    let (show_authority_pubkey, bump_seed) = Pubkey::find_program_address_for_pubkey(&show.pubkey(), program_id);
+    let (viewer_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
+        &show_authority_pubkey,
+        &input.user_wallet,
+        &program_id,
+    )?;
+    is_derived(show_authority_pubkey, show_authority)?;
+    is_derived(viewer_pubkey, viewer)?;
+
+
+    let authority_signature = ProgramPubkeySignature::new(show_authority, bump_seed);
+    let stake_account_state = Viewer {
+        version: StateVersion::V1,
+    };
+        let rent_state = Rent::from_account_info(sysvar_rent)?;
+        let lamports = rent_state.minimum_balance(Viewer::LEN);
+
+    invoke::create_account_with_seed_signed(
+        system_program,
+        &owner, 
+        &viewer,
+        show_authority,
+        &seed[..],
+        lamports,
+        Viewer::LEN as u64,
+        program_id,            
+        &authority_signature,
+    )?;    
+
+    Ok(())
 }
 
 fn initialize_show<'a>(program_id: &Pubkey, system_program: &AccountInfo<'a>, sysvar_rent: &AccountInfo<'a>, spl_token_program: &AccountInfo<'a>, owner: &AccountInfo<'a>, show: &AccountInfo<'a>, show_authority: &AccountInfo<'a>, token_account: &AccountInfo<'a>, mint: &AccountInfo<'a>, input: crate::instructions::InitializeShowInput)-> ProgramResult {
@@ -69,7 +230,7 @@ fn initialize_show<'a>(program_id: &Pubkey, system_program: &AccountInfo<'a>, sy
         &spl_token::id(),
     )?;   
     is_derived(show_authority_pubkey, show_authority)?;
-    is_derived(show_authority_pubkey, show_authority)?;
+    is_derived(token_account_pubkey, token_account)?;
     show.is_signer()?;
     owner.is_signer()?;
     

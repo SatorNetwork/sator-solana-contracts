@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 use std::error::Error;
 
 use sator_sdk::invoke::{self, ProgramPubkeySignature};
-use sator_sdk::borsh::*;
+use sator_sdk::{borsh::*, is_owner};
 use sator_sdk::program::*;
 use sator_sdk::state::StateVersion;
 use sator_sdk::types::*;
@@ -282,7 +282,7 @@ fn unstake<'a>(
     // as decided, right now admin dispatches instructions
     // could do admin OR wallet
     stake_pool_owner.is_signer()?;
-    is_derived(viewer_stake_pool_state.owner, stake_pool_owner)?;
+    is_owner!(stake_pool_owner, viewer_stake_pool_state);
     //wallet.is_signer()?;
     let clock = Clock::from_account_info(clock)?;
     if stake_account_state.staked_until > clock.unix_timestamp {
