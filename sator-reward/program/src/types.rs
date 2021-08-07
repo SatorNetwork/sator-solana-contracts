@@ -10,7 +10,7 @@ use solana_program::clock::UnixTimestamp;
 use solana_program::pubkey::Pubkey;
 
 
-#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
+#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone, Copy)]
 pub struct Winner {    
     pub wallet: Pubkey,
     pub points: u16,

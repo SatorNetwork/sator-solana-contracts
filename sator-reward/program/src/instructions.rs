@@ -12,18 +12,18 @@ use crate::program_id;
 use crate::types::Winner;
 
 
-#[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
+#[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema, Clone)]
 pub struct InitializeShowInput {    
     pub reward_lock_time: ApproximateSeconds,    
 }
 
-#[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
+#[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema,  Clone)]
 pub struct InitializeViewerInput {    
     pub user_wallet: Pubkey,    
 }
 
 
-#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
+#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Clone)]
 pub enum Instruction {
     InitializeShow(InitializeShowInput),
     InitializeViewer(InitializeViewerInput),
@@ -35,14 +35,14 @@ pub enum Instruction {
 /// Creates [Instruction::InitializeShow] instruction which initializes `show` and shows' `token_account` 
 ///
 /// Accounts:
-///  * `system_program`  - *program, implicit* to create accounts
-///  * `sysvar_rent`     - *program, implicit* ensure that `token_account` and  `show` are rent exempt.
-///  * `spl_token`       - *program, implicit* spl token program to initialize `token_account`.
-///  * `owner`           - *signer, payer* and owner of `show`.
-///  * `show`            - *mutable, signer* not initialized not created account for show data.
-///  * `show_authority` - *implicit* program derived account from `32 bytes show public key` based `program_id`.
-///  * `token_account`   - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `show_authority`.
-///  * `mint`            - used to initialize `token_account` for reference
+///  * `system_program`        - *program, implicit* to create accounts
+///  * `sysvar_rent`           - *program, implicit* ensure that `token_account` and  `show` are rent exempt.
+///  * `spl_token_program`     - *program, implicit* spl token program to initialize `token_account`.
+///  * `owner`                 - *signer, payer* and owner of `show`.
+///  * `show`                  - *mutable, signer* not initialized not created account for show data.
+///  * `show_authority`        - *implicit* program derived account from `32 bytes show public key` based `program_id`.
+///  * `token_account`         - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `show_authority`.
+///  * `mint`                  - used to initialize `token_account` for reference
 #[allow(clippy::too_many_arguments)]
 pub fn initialize_show(
     owner: &SignerPubkey,
@@ -50,7 +50,7 @@ pub fn initialize_show(
     mint: &MintPubkey,
     input: InitializeShowInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
-    let show_authority = Pubkey::find_program_address_for_pubkey(show, &program_id());
+    let show_authority = Pubkey::find_program_address_for_pubkey(&show.pubkey(), &program_id());
     let token_account = Pubkey::create_with_seed(
         &show_authority.0,
         "Show::token_account",
@@ -109,7 +109,7 @@ pub fn initialize_viewer(
 
 
 #[repr(C)]
-#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
+#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone)]
 pub struct InitializeQuizInput {  
     pub winners: [Winner; 5],    
 }

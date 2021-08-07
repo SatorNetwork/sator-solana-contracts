@@ -47,6 +47,7 @@ pub struct Quiz {
 
 impl Show {
     pub const LEN: usize = 43;
+    pub const token_account: &'static str = "Show::token_account";
 
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {

@@ -18,16 +18,15 @@ use solana_program::{
 
 use crate::instruction::Instruction;
 use crate::state::{ViewerStake, ViewerStakePool};
-use crate::{errors, stake_viewer_program_id};
+use crate::{errors,};
 use borsh::BorshSerialize;
 
 // Program entrypoint's implementation
 pub fn process_instruction(
-    program_id: &Pubkey,
+    program_id: &ProgramPubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],
-) -> ProgramResult {
-    msg!("sator_stake_viewer::process_instruction");
+) -> ProgramResult {    
     let instruction = Instruction::deserialize_const(instruction_data)?;
     match instruction {
         Instruction::InitializeStakePool(input) => {
@@ -55,6 +54,7 @@ pub fn process_instruction(
             match accounts {
                 [system_program, rent, clock, spl_token, user_wallet, stake_pool, stake_authority, token_account_source, token_account_stake_target, stake_account, ..] => {
                     stake(
+                        program_id,
                         system_program,
                         rent,
                         clock,
@@ -77,6 +77,7 @@ pub fn process_instruction(
             match accounts {
                 [clock, spl_token, wallet, stake_pool, stake_authority, token_account_target, token_account_stake_source, stake_account, stake_pool_owner, ..] => {
                     unstake(
+                        program_id,
                         clock,
                         spl_token,
                         wallet,
@@ -109,7 +110,7 @@ fn initialize_stake<'a>(
     owner.is_signer()?;
     stake_pool.is_signer()?;
     let (stake_authority_pubkey, bump_seed, token_account_pubkey) =
-        derive_token_account(stake_pool)?;
+        derive_token_account(stake_pool, program_id)?;
 
     is_derived(stake_authority_pubkey, stake_authority)?;
     is_derived(token_account_pubkey, token_account)?;
@@ -134,7 +135,7 @@ fn initialize_stake<'a>(
         &owner,
         &token_account,
         stake_authority,
-        "ViewerStakePool::token_account".to_string(),
+        "ViewerStakePool::token_account",
         lamports,
         spl_token::state::Account::LEN as u64,
         &spl_token::id(),        
@@ -158,8 +159,12 @@ fn initialize_stake<'a>(
     Ok(())
 }
 
-fn derive_token_account(stake: &AccountInfo) -> Result<(Pubkey, u8, Pubkey), ProgramError> {
-    let (stake_authority_pubkey, bump_seed) = derive_stake_authority_account(stake);
+fn derive_token_account(stake: &AccountInfo, program_id:&ProgramPubkey) -> Result<(Pubkey, u8, Pubkey), ProgramError> {
+    let (stake_authority_pubkey, bump_seed) = {
+        let (stake_authority_pubkey, bump_seed) =
+            Pubkey::find_program_address_for_pubkey(&stake.pubkey(), program_id);
+        (stake_authority_pubkey, bump_seed)
+    };
     let derived = Pubkey::create_with_seed(
         &stake_authority_pubkey,
         "ViewerStakePool::token_account",
@@ -168,13 +173,9 @@ fn derive_token_account(stake: &AccountInfo) -> Result<(Pubkey, u8, Pubkey), Pro
     Ok((stake_authority_pubkey, bump_seed, derived))
 }
 
-fn derive_stake_authority_account(stake: &AccountInfo) -> (Pubkey, u8) {
-    let (stake_authority_pubkey, bump_seed) =
-        Pubkey::find_program_address_for_pubkey(&stake.pubkey(), &crate::stake_viewer_program_id());
-    (stake_authority_pubkey, bump_seed)
-}
 
 fn stake<'a>(
+    program_id: &ProgramPubkey,
     system_program: &AccountInfo<'a>,
     rent: &AccountInfo<'a>,
     clock: &AccountInfo<'a>,
@@ -188,7 +189,7 @@ fn stake<'a>(
     input: crate::instruction::StakeInput,
 ) -> ProgramResult {
     user_wallet.is_signer()?;
-    stake_pool.is_owner(&stake_viewer_program_id())?;
+    stake_pool.is_owner(program_id)?;
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     stake_pool_state.initialized()?;
     let clock = Clock::from_account_info(clock)?;
@@ -197,12 +198,12 @@ fn stake<'a>(
     }
 
     let (stake_authority_pubkey, bump_seed, token_account_pubkey) =
-        derive_token_account(stake_pool)?;
+        derive_token_account(stake_pool, program_id)?;
 
     let (stake_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
         &user_wallet.pubkey(),
-        &stake_viewer_program_id(),
+        program_id,
     )?;
 
     is_derived(stake_authority_pubkey, stake_authority)?;
@@ -225,15 +226,15 @@ fn stake<'a>(
             &user_wallet, // can split signers from payers, so that in future either user can stake or admin
             &stake_account,
             stake_authority,
-            seed,
+            &seed[..],
             lamports,
             ViewerStake::LEN as u64,
-            &stake_viewer_program_id(),            
+            program_id,            
             &authority_signature,
         )?;
         stake_account_state
     } else {
-        stake_account.is_owner(&stake_viewer_program_id())?;
+        stake_account.is_owner(program_id)?;
         let mut stake_account_state = stake_account.deserialize::<ViewerStake>()?;
         stake_account_state.initialized()?;
 
@@ -260,6 +261,7 @@ fn stake<'a>(
 }
 
 fn unstake<'a>(
+    program_id: &ProgramPubkey,
     clock: &AccountInfo<'a>,
     spl_token: &AccountInfo<'a>,
     wallet: &AccountInfo<'a>,
@@ -273,7 +275,7 @@ fn unstake<'a>(
     let stake_account_state = stake_account.deserialize::<ViewerStake>()?;
     let viewer_stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     stake_account_state.initialized()?;
-    stake_account.is_owner(&stake_viewer_program_id())?;
+    stake_account.is_owner(program_id)?;
     
     is_derived(stake_account_state.owner, wallet)?;
 
@@ -288,13 +290,13 @@ fn unstake<'a>(
     }
 
     let (stake_authority_pubkey, bump_seed, token_account_stake_pubkey) =
-        derive_token_account(stake_pool)?;
+        derive_token_account(stake_pool, program_id)?;
     is_derived(token_account_stake_pubkey, token_account_stake_source)?;
 
     let (stake_account_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
         &wallet.pubkey(),
-        &stake_viewer_program_id(),
+        program_id,
     )?;
 
     is_derived(stake_account_pubkey, stake_account)?;
