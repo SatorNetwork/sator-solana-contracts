@@ -20,7 +20,7 @@ pub struct Show {
     /// period after which user can claim reward
     pub lock_time: ApproximateSeconds,
     /// next quiz index
-    pub quizes_len: u16,
+    pub quizes_index: u16,
     ///  owner of the show
     pub owner: SignerPubkey,
 }
@@ -40,6 +40,7 @@ pub struct Quiz {
     pub version: StateVersion,
     pub winners: [Winner; 5],
     pub locked_until: UnixTimestamp,
+    pub index: u16,
 }
 
 impl Show {

@@ -85,8 +85,79 @@ pub fn process_instruction(
             }
             _ => Err(ProgramError::NotEnoughAccountKeys),
         },
-        Instruction::Claim => todo!(),
+        Instruction::Claim => match accounts {
+            [spl_token, show, owner, show_authority, winner, show_token_account, user_token_account, ..] =>
+            {
+                let quizes = accounts.iter().skip(6);
+                claim(
+                    program_id,
+                    spl_token,
+                    show,
+                    owner,
+                    show_authority,
+                    winner,
+                    show_token_account,
+                    user_token_account,
+                    quizes,
+                )
+            }
+            _ => Err(ProgramError::NotEnoughAccountKeys),
+        },
     }
+}
+
+fn claim<'a>(
+    program_id: &Pubkey,
+    spl_token: &AccountInfo<'a>,
+    show: &AccountInfo<'a>,
+    owner: &AccountInfo<'a>,
+    show_authority: &AccountInfo<'a>,
+    winner: &AccountInfo<'a>,
+    show_token_account: &AccountInfo<'a>,
+    user_token_account: &AccountInfo<'a>,
+    quizes: std::iter::Skip<std::slice::Iter<AccountInfo<'a>>>,
+) -> ProgramResult {
+    let mut show_state = show.deserialize::<Show>()?;
+    show_state.uninitialized()?;
+    is_owner!(owner, show_state);
+    owner.is_signer()?;
+
+    let (show_authority_pubkey, bump_seed) =
+        Pubkey::find_program_address_for_pubkey(&show.pubkey(), program_id);
+    let authority_signature = ProgramPubkeySignature::new(show_authority, bump_seed);
+
+    for quiz in quizes {
+        let mut quiz_state = quiz.deserialize::<Quiz>()?;
+        let (quiz_pubkey, _) = Pubkey::create_with_seed_index(
+            &show_authority_pubkey,
+            Show::quizes,
+            quiz_state.index as u64,
+            &program_id,
+        )?;
+        is_derived(quiz_pubkey, quiz)?;
+        quiz.is_owner(program_id)?;
+
+        if let Some(winner) = quiz_state
+            .winners
+            .iter_mut()
+            .filter(|x| x.user_wallet == winner.pubkey() && !x.claimed)
+            .next()
+        {
+            winner.claimed = true;
+
+            invoke::spl_token_transfer_signed(
+                spl_token,
+                show_token_account,
+                user_token_account,
+                show_authority,
+                winner.points as u64,
+                &authority_signature,
+            )?;
+        }
+        quiz_state.serialize_const(&mut *quiz.try_borrow_mut_data()?)?;
+    }
+
+    Ok(())
 }
 
 fn initialize_winners<'a>(
@@ -102,23 +173,22 @@ fn initialize_winners<'a>(
     input: InitializeQuizInput,
 ) -> ProgramResult {
     let mut show_state = show.deserialize::<Show>()?;
-
     show_state.uninitialized()?;
     is_owner!(owner, show_state);
     owner.is_signer()?;
 
     let (show_authority_pubkey, bump_seed) =
         Pubkey::find_program_address_for_pubkey(&show.pubkey(), program_id);
+    let authority_signature = ProgramPubkeySignature::new(show_authority, bump_seed);
     let (quiz_pubkey, seed) = Pubkey::create_with_seed_index(
         &show_authority_pubkey,
         Show::quizes,
-        show_state.quizes_len as u64,
+        show_state.quizes_index as u64,
         &program_id,
     )?;
     is_derived(show_authority_pubkey, show_authority)?;
     is_derived(quiz_pubkey, quiz)?;
 
-    let authority_signature = ProgramPubkeySignature::new(show_authority, bump_seed);
     let rent_state = Rent::from_account_info(sysvar_rent)?;
     let lamports = rent_state.minimum_balance(Quiz::LEN);
 
@@ -135,8 +205,10 @@ fn initialize_winners<'a>(
     )?;
 
     let mut quiz_state = quiz.deserialize::<Quiz>()?;
-    quiz_state.initialized()?;
     quiz_state.winners = input.winners;
+    quiz_state.index = show_state.quizes_index;
+    quiz_state.initialized()?;
+
     let mut winners_pubkeys = Vec::new();
     for winner in quiz_state.winners.iter() {
         winners_pubkeys.push(winner.user_wallet);
@@ -162,7 +234,7 @@ fn initialize_winners<'a>(
     quiz_state.locked_until = clock.unix_timestamp + show_state.lock_time;
     quiz_state.serialize_const(&mut *quiz.try_borrow_mut_data()?)?;
 
-    show_state.quizes_len += 1;
+    show_state.quizes_index += 1;
     show_state.serialize_const(&mut *show.try_borrow_mut_data()?)?;
 
     Ok(())

@@ -162,16 +162,14 @@ pub fn initialize_quiz(
 /// Creates [Instruction::Claim] wins on behalf of user. Transfers tokens from show account to user account, sets win claimed.
 ///
 /// Accounts:
-///  * `system_program`     - *program, implicit* to create accounts
-///  * `sysvar_rent`        - *program, implicit* ensure that `quiz` are rent exempt.
 ///  * `spl_token`         
-///  * `show`               - used to validate `owner` and `quiz` and tak
+///  * `show`               - used to validate `owner` and `quiz`
 ///  * `owner`              - *signer, payer* and owner of `show`.
-///  * `show_authority` -    *implicit* program derived account from `32 bytes show public key` based `program_id`.
+///  * `show_authority`     - *implicit* program derived account from `32 bytes show public key` based `program_id`.
 //   * `winner`             - will be find in each quiz
 //   * `show_token_account` - *derived* source
 //   * `user_token_account` - destination
-///  * `quizes`          - *mutable, derived* to claim rewards from
+///  * `quizes`             - *mutable, derived* to claim rewards from
 #[allow(clippy::too_many_arguments)]
 pub fn claim(
     owner: &SignerPubkey,
@@ -193,7 +191,6 @@ pub fn claim(
         [
             vec![
                 AccountMeta::new_readonly(system_program::id(), false),
-                AccountMeta::new_readonly(sysvar::rent::id(), false),
                 AccountMeta::new_readonly(spl_token::id(), false),
                 AccountMeta::new_readonly(*show, false),
                 AccountMeta::new_readonly(*owner, true),
