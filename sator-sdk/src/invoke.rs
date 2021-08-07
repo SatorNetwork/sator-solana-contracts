@@ -10,7 +10,7 @@ use solana_program::{
 
 use super::{
     program::{AccountPatterns, PubkeyPatterns},
-    types::{ ProgramPubkey},
+    types::ProgramPubkey,
 };
 
 /// Creates system account externally signed
@@ -85,7 +85,7 @@ pub fn create_account_with_seed_signed<'a>(
     seed: &str,
     lamports: u64,
     space: u64,
-    program_owner: &ProgramPubkey,    
+    program_owner: &ProgramPubkey,
     signers_seeds: &ProgramPubkeySignature,
 ) -> ProgramResult {
     let instruction = &system_instruction::create_account_with_seed(
@@ -104,7 +104,6 @@ pub fn create_account_with_seed_signed<'a>(
         &[&signers_seeds.signature()[..]],
     )
 }
-
 
 /// Initialize mint
 pub fn initialize_mint<'a>(

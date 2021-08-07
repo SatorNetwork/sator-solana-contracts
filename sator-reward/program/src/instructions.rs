@@ -1,7 +1,9 @@
 //! Program instruction state
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use sator_sdk::program::PubkeyPatterns;
-use sator_sdk::types::{ApproximateSeconds, MintPubkey, SignerPubkey, TokenAccountPubkey, TokenAmount};
+use sator_sdk::types::{
+    ApproximateSeconds, MintPubkey, SignerPubkey, TokenAccountPubkey, TokenAmount,
+};
 use solana_program::clock::UnixTimestamp;
 use solana_program::instruction::AccountMeta;
 use solana_program::pubkey::Pubkey;
@@ -11,17 +13,15 @@ use solana_program::{system_program, sysvar};
 use crate::program_id;
 use crate::types::Winner;
 
+#[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema, Clone)]
+pub struct InitializeShowInput {
+    pub reward_lock_time: ApproximateSeconds,
+}
 
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema, Clone)]
-pub struct InitializeShowInput {    
-    pub reward_lock_time: ApproximateSeconds,    
+pub struct InitializeViewerInput {
+    pub user_wallet: Pubkey,
 }
-
-#[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema,  Clone)]
-pub struct InitializeViewerInput {    
-    pub user_wallet: Pubkey,    
-}
-
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Clone)]
 pub enum Instruction {
@@ -29,10 +29,9 @@ pub enum Instruction {
     InitializeViewer(InitializeViewerInput),
     InitializeQuiz(InitializeQuizInput),
     Claim,
-    
 }
 
-/// Creates [Instruction::InitializeShow] instruction which initializes `show` and shows' `token_account` 
+/// Creates [Instruction::InitializeShow] instruction which initializes `show` and shows' `token_account`
 ///
 /// Accounts:
 ///  * `system_program`        - *program, implicit* to create accounts
@@ -51,11 +50,8 @@ pub fn initialize_show(
     input: InitializeShowInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let show_authority = Pubkey::find_program_address_for_pubkey(&show.pubkey(), &program_id());
-    let token_account = Pubkey::create_with_seed(
-        &show_authority.0,
-        "Show::token_account",
-        &spl_token::id(),
-    )?;
+    let token_account =
+        Pubkey::create_with_seed(&show_authority.0, "Show::token_account", &spl_token::id())?;
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
         &Instruction::InitializeShow(input),
@@ -72,7 +68,6 @@ pub fn initialize_show(
     ))
 }
 
-
 /// Creates [Instruction::InitializeViewer] instruction which proves the user passed QR code check, so that derived marker account created.
 ///
 /// Accounts:
@@ -88,7 +83,8 @@ pub fn initialize_viewer(
     show: &Pubkey,
     input: InitializeViewerInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
-    let (show_authority_pubkey, _) = Pubkey::find_program_address_for_pubkey(&show.pubkey(), &program_id());
+    let (show_authority_pubkey, _) =
+        Pubkey::find_program_address_for_pubkey(&show.pubkey(), &program_id());
     let (viewer_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
         &show_authority_pubkey,
         &input.user_wallet,
@@ -99,22 +95,20 @@ pub fn initialize_viewer(
         &Instruction::InitializeViewer(input),
         vec![
             AccountMeta::new_readonly(system_program::id(), false),
-            AccountMeta::new_readonly(sysvar::rent::id(), false),            
+            AccountMeta::new_readonly(sysvar::rent::id(), false),
             AccountMeta::new_readonly(*owner, true),
             AccountMeta::new_readonly(*show, false),
             AccountMeta::new_readonly(show_authority_pubkey, false),
-            AccountMeta::new(viewer_pubkey, false),            
+            AccountMeta::new(viewer_pubkey, false),
         ],
     ))
 }
 
-
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone)]
-pub struct InitializeQuizInput {  
-    pub winners: [Winner; 5],    
+pub struct InitializeQuizInput {
+    pub winners: [Winner; 5],
 }
-
 
 /// Creates [Instruction::InitializeQuiz] instruction which initializes `quiz` with results. Validates winner is viewer.
 /// `show`'s `quizes` latest number must be provided.
@@ -123,7 +117,7 @@ pub struct InitializeQuizInput {
 ///  * `system_program`  - *program, implicit* to create accounts
 ///  * `sysvar_rent`     - *program, implicit* ensure that `quiz` are rent exempt.
 ///  * `clock`           - *program, implicit* to calculate prize won time
-///  * `show`            - used to validate `owner` and `quiz` and tak 
+///  * `show`            - used to validate `owner` and `quiz` and tak
 ///  * `owner`           - *signer, payer* and owner of `show`.
 ///  * `show_authority` - *implicit* program derived account from `32 bytes show public key` based `program_id`.
 ///  * `quiz`            - *mutable, derived* from `show` + index
@@ -132,7 +126,7 @@ pub struct InitializeQuizInput {
 pub fn initialize_quiz(
     owner: &SignerPubkey,
     show: &Pubkey,
-    quizes:u16,        
+    quizes: u16,
     winners: Vec<Pubkey>,
     input: InitializeQuizInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
@@ -143,21 +137,27 @@ pub fn initialize_quiz(
         quizes as u64,
         &program_id(),
     )?;
-    let winners = winners.into_iter().map(|x| AccountMeta::new_readonly(x, false)).collect();
+    let winners = winners
+        .into_iter()
+        .map(|x| AccountMeta::new_readonly(x, false))
+        .collect();
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
         &Instruction::InitializeQuiz(input),
-        [vec![
-            AccountMeta::new_readonly(system_program::id(), false),
-            AccountMeta::new_readonly(sysvar::rent::id(), false),                        
-            AccountMeta::new_readonly(*owner, true),
-            AccountMeta::new(*show, false),
-            AccountMeta::new_readonly(show_authority_pubkey, false),
-            AccountMeta::new(quiz_pubkey, false),            
-        ], winners].concat(),
+        [
+            vec![
+                AccountMeta::new_readonly(system_program::id(), false),
+                AccountMeta::new_readonly(sysvar::rent::id(), false),
+                AccountMeta::new_readonly(*owner, true),
+                AccountMeta::new(*show, false),
+                AccountMeta::new_readonly(show_authority_pubkey, false),
+                AccountMeta::new(quiz_pubkey, false),
+            ],
+            winners,
+        ]
+        .concat(),
     ))
 }
-
 
 /// Creates [Instruction::Claim] wins on behalf of user. Transfers tokens from show account to user account, sets win claimed.
 ///
@@ -165,7 +165,7 @@ pub fn initialize_quiz(
 ///  * `system_program`     - *program, implicit* to create accounts
 ///  * `sysvar_rent`        - *program, implicit* ensure that `quiz` are rent exempt.
 ///  * `spl_token`         
-///  * `show`               - used to validate `owner` and `quiz` and tak 
+///  * `show`               - used to validate `owner` and `quiz` and tak
 ///  * `owner`              - *signer, payer* and owner of `show`.
 ///  * `show_authority` -    *implicit* program derived account from `32 bytes show public key` based `program_id`.
 //   * `winner`             - will be find in each quiz
@@ -176,30 +176,34 @@ pub fn initialize_quiz(
 pub fn claim(
     owner: &SignerPubkey,
     show: &SignerPubkey,
-    winner: Pubkey,    
-    user_token_account: TokenAccountPubkey,    
-    quizes:Vec<Pubkey>,        
+    winner: Pubkey,
+    user_token_account: TokenAccountPubkey,
+    quizes: Vec<Pubkey>,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let show_authority = Pubkey::find_program_address_for_pubkey(show, &program_id());
-    let show_token_account = Pubkey::create_with_seed(
-        &show_authority.0,
-        "Show::token_account",
-        &spl_token::id(),
-    )?;
-    let quizes = quizes.into_iter().map(|x| AccountMeta::new(x, false)).collect();
+    let show_token_account =
+        Pubkey::create_with_seed(&show_authority.0, "Show::token_account", &spl_token::id())?;
+    let quizes = quizes
+        .into_iter()
+        .map(|x| AccountMeta::new(x, false))
+        .collect();
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
         &Instruction::Claim,
-        [vec![
-            AccountMeta::new_readonly(system_program::id(), false),
-            AccountMeta::new_readonly(sysvar::rent::id(), false),            
-            AccountMeta::new_readonly(spl_token::id(), false),            
-            AccountMeta::new_readonly(*show, false),
-            AccountMeta::new_readonly(*owner, true),
-            AccountMeta::new_readonly(show_authority.0, false),
-            AccountMeta::new(winner, false),            
-            AccountMeta::new(show_token_account, false),            
-            AccountMeta::new(user_token_account, false),            
-        ], quizes].concat(),
+        [
+            vec![
+                AccountMeta::new_readonly(system_program::id(), false),
+                AccountMeta::new_readonly(sysvar::rent::id(), false),
+                AccountMeta::new_readonly(spl_token::id(), false),
+                AccountMeta::new_readonly(*show, false),
+                AccountMeta::new_readonly(*owner, true),
+                AccountMeta::new_readonly(show_authority.0, false),
+                AccountMeta::new(winner, false),
+                AccountMeta::new(show_token_account, false),
+                AccountMeta::new(user_token_account, false),
+            ],
+            quizes,
+        ]
+        .concat(),
     ))
 }

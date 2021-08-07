@@ -1,5 +1,3 @@
-
-
 use std::ops::Mul;
 use std::time::Duration;
 
@@ -9,9 +7,8 @@ use sator_sdk::types::{ApproximateSeconds, SignerPubkey, TokenAccountPubkey, Tok
 use solana_program::clock::UnixTimestamp;
 use solana_program::pubkey::Pubkey;
 
-
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone, Copy)]
-pub struct Winner {    
+pub struct Winner {
     pub user_wallet: Pubkey,
     pub points: u16,
     pub claimed: bool,

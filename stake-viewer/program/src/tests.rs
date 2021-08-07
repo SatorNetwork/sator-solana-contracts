@@ -1,5 +1,5 @@
 use crate::{
-    instruction::StakeInput,    
+    instruction::StakeInput,
     spl_transactions,
     state::{ViewerStake, ViewerStakePool},
     tests_helpers::*,
@@ -9,19 +9,20 @@ use borsh::BorshDeserialize;
 use sator_sdk::program::PubkeyPatterns;
 use solana_program::native_token::sol_to_lamports;
 use solana_program_test::*;
-use solana_sdk::{    
+use solana_sdk::{
     account::Account,
     instruction::{AccountMeta, Instruction},
+    program::*,
     pubkey::Pubkey,
     signature::{Keypair, Signer},
     transaction::Transaction,
-    program::*,
 };
 use std::mem;
 
 use crate::{
-    instruction::InitializeStakePoolInput, processor::process_instruction, stake_viewer_program_id,
-    spl_transactions::create_initialize_mint, state, transactions::initialize_stake, types::Rank,
+    instruction::InitializeStakePoolInput, processor::process_instruction,
+    spl_transactions::create_initialize_mint, stake_viewer_program_id, state,
+    transactions::initialize_stake, types::Rank,
 };
 
 pub fn new_program_test() -> ProgramTest {
@@ -111,8 +112,10 @@ async fn flow() {
         .await
         .unwrap();
 
-    let stake_authority =
-        Pubkey::find_program_address_for_pubkey(&stake_pool.pubkey(), &crate::stake_viewer_program_id());
+    let stake_authority = Pubkey::find_program_address_for_pubkey(
+        &stake_pool.pubkey(),
+        &crate::stake_viewer_program_id(),
+    );
     let token_account = Pubkey::create_with_seed(
         &stake_authority.0,
         "ViewerStakePool::token_account",

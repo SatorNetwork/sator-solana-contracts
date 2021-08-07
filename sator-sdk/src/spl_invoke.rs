@@ -11,9 +11,8 @@ use spl_token::instruction::initialize_account;
 
 use super::{
     program::{AccountPatterns, PubkeyPatterns},
-    types::{ ProgramPubkey},
+    types::ProgramPubkey,
 };
-
 
 /// Initialize token account
 pub fn initialize_token_account<'a>(

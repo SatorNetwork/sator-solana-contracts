@@ -35,19 +35,19 @@ fn main() {
             InitializeStakePoolInput {
                 ranks: [
                     Rank {
-                        minimal_staking_time: 0,                        
+                        minimal_staking_time: 0,
                         amount: 100,
                     },
                     Rank {
-                        minimal_staking_time: 30 * 60,                        
+                        minimal_staking_time: 30 * 60,
                         amount: 200,
                     },
                     Rank {
-                        minimal_staking_time: 60 * 60,                        
+                        minimal_staking_time: 60 * 60,
                         amount: 300,
                     },
                     Rank {
-                        minimal_staking_time: 2 * 60 * 60,                        
+                        minimal_staking_time: 2 * 60 * 60,
                         amount: 500,
                     },
                 ],

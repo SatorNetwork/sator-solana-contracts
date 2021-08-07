@@ -12,10 +12,7 @@ use solana_sdk::{
 };
 use std::mem;
 
-use crate::{
-    stake_viewer_program_id,    
-    state,
-};
+use crate::{stake_viewer_program_id, state};
 
 pub fn create_token_account(
     account_rent: Lamports,

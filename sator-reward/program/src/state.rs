@@ -12,16 +12,15 @@ use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
 use crate::types::Winner;
 
-
 /// show reward pool, used to derive Show::token_account
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
-pub struct Show {    
+pub struct Show {
     pub version: StateVersion,
     /// period after which user can claim reward
     pub lock_time: ApproximateSeconds,
     /// next quiz index
-    pub quizes_len: u16,    
+    pub quizes_len: u16,
     ///  owner of the show
     pub owner: SignerPubkey,
 }
@@ -29,27 +28,24 @@ pub struct Show {
 /// derived from wallet + show
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
-pub struct Viewer {        
+pub struct Viewer {
     pub version: StateVersion,
 }
-
 
 /// Up to N winners with points, derived from show + counter. '
 /// Prise pool is sum of tokens.
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
-pub struct Quiz {  
-    pub version: StateVersion,      
+pub struct Quiz {
+    pub version: StateVersion,
     pub winners: [Winner; 5],
     pub locked_until: UnixTimestamp,
 }
-
 
 impl Show {
     pub const LEN: usize = 43;
     pub const token_account: &'static str = "Show::token_account";
     pub const quizes: &'static str = "Show::quizes";
-    
 
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
@@ -108,7 +104,7 @@ impl Quiz {
 
 #[cfg(test)]
 mod tests {
-    use crate::state::*;    
+    use crate::state::*;
     use borsh::*;
 
     #[test]

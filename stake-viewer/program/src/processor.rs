@@ -2,10 +2,10 @@ use std::borrow::Borrow;
 use std::error::Error;
 
 use sator_sdk::invoke::{self, ProgramPubkeySignature};
-use sator_sdk::{borsh::*, is_owner};
 use sator_sdk::program::*;
 use sator_sdk::state::StateVersion;
 use sator_sdk::types::*;
+use sator_sdk::{borsh::*, is_owner};
 use solana_program::clock::Clock;
 use solana_program::msg;
 use solana_program::program_error::{PrintProgramError, ProgramError};
@@ -16,9 +16,9 @@ use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
 };
 
+use crate::errors;
 use crate::instruction::Instruction;
 use crate::state::{ViewerStake, ViewerStakePool};
-use crate::{errors,};
 use borsh::BorshSerialize;
 
 // Program entrypoint's implementation
@@ -26,7 +26,7 @@ pub fn process_instruction(
     program_id: &ProgramPubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],
-) -> ProgramResult {    
+) -> ProgramResult {
     let instruction = Instruction::deserialize_const(instruction_data)?;
     match instruction {
         Instruction::InitializeStakePool(input) => {
@@ -125,10 +125,9 @@ fn initialize_stake<'a>(
         program_id,
         system_program,
     )?;
-    
-    
+
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
-    
+
     let lamports = rent_state.minimum_balance(spl_token::state::Account::LEN);
     invoke::create_account_with_seed_signed(
         system_program,
@@ -138,7 +137,7 @@ fn initialize_stake<'a>(
         "ViewerStakePool::token_account",
         lamports,
         spl_token::state::Account::LEN as u64,
-        &spl_token::id(),        
+        &spl_token::id(),
         &authority_signature,
     )?;
 
@@ -146,7 +145,7 @@ fn initialize_stake<'a>(
         token_account,
         &mint,
         stake_authority,
-        rent,        
+        rent,
         &authority_signature,
     )?;
 
@@ -159,7 +158,10 @@ fn initialize_stake<'a>(
     Ok(())
 }
 
-fn derive_token_account(stake: &AccountInfo, program_id:&ProgramPubkey) -> Result<(Pubkey, u8, Pubkey), ProgramError> {
+fn derive_token_account(
+    stake: &AccountInfo,
+    program_id: &ProgramPubkey,
+) -> Result<(Pubkey, u8, Pubkey), ProgramError> {
     let (stake_authority_pubkey, bump_seed) = {
         let (stake_authority_pubkey, bump_seed) =
             Pubkey::find_program_address_for_pubkey(&stake.pubkey(), program_id);
@@ -172,7 +174,6 @@ fn derive_token_account(stake: &AccountInfo, program_id:&ProgramPubkey) -> Resul
     )?;
     Ok((stake_authority_pubkey, bump_seed, derived))
 }
-
 
 fn stake<'a>(
     program_id: &ProgramPubkey,
@@ -229,7 +230,7 @@ fn stake<'a>(
             &seed[..],
             lamports,
             ViewerStake::LEN as u64,
-            program_id,            
+            program_id,
             &authority_signature,
         )?;
         stake_account_state
@@ -276,7 +277,7 @@ fn unstake<'a>(
     let viewer_stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     stake_account_state.initialized()?;
     stake_account.is_owner(program_id)?;
-    
+
     is_derived(stake_account_state.owner, wallet)?;
 
     // as decided, right now admin dispatches instructions
@@ -293,17 +294,13 @@ fn unstake<'a>(
         derive_token_account(stake_pool, program_id)?;
     is_derived(token_account_stake_pubkey, token_account_stake_source)?;
 
-    let (stake_account_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
-        &stake_authority_pubkey,
-        &wallet.pubkey(),
-        program_id,
-    )?;
+    let (stake_account_pubkey, _) =
+        Pubkey::create_with_seed_for_pubkey(&stake_authority_pubkey, &wallet.pubkey(), program_id)?;
 
     is_derived(stake_account_pubkey, stake_account)?;
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
 
-    
     // as discussed, unstaking will not give multiplier reward
     // let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     // let reward_amount = stake_pool_state.calculate_reward(stake_account_state)?;

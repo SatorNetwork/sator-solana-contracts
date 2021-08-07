@@ -42,12 +42,11 @@ mod spl_transactions;
 #[cfg(test)]
 mod tests_helpers;
 
-
 use sator_sdk::types::ProgramPubkey;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};
 
 solana_program::declare_id!("CL9tjeJL38C3eWqd6g7iHMnXaJ17tmL2ygkLEHghrj4u");
 
-pub fn stake_viewer_program_id() -> ProgramPubkey {    
+pub fn stake_viewer_program_id() -> ProgramPubkey {
     crate::id()
 }

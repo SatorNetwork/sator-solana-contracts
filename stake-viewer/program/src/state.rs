@@ -13,7 +13,6 @@ use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 use crate::errors::Error;
 use crate::types::*;
 
-
 /// Pool state and rules
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]

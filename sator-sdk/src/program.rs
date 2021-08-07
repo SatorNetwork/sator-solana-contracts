@@ -1,5 +1,5 @@
 //! In program helpers
-use borsh::{BorshDeserialize,};
+use borsh::BorshDeserialize;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -68,7 +68,7 @@ impl PubkeyPatterns for Pubkey {
         seed_index: u64,
         owner: &ProgramPubkey,
     ) -> Result<(ProgramDerivedPubkey, String), PubkeyError> {
-        let seed = format!("{}{:?}", seed, seed_index);        
+        let seed = format!("{}{:?}", seed, seed_index);
         let pubkey = Pubkey::create_with_seed(base, &seed, owner)?;
         Ok((pubkey, seed))
     }
@@ -165,7 +165,6 @@ pub fn burn_account(burned: &AccountInfo, beneficiary: &AccountInfo) {
     **from = 0;
 }
 
-
 /// check that some `owner` field on `account_state` is equals `owner_pubkey`(each pubkey has `pubkey()`).
 /// (structural typing)
 #[macro_export]
@@ -173,10 +172,9 @@ macro_rules! is_owner {
     (
         $owner_pubkey:expr,
         $account_state:expr
-    )
-    => {
+    ) => {
         if $account_state.owner != $owner_pubkey.pubkey() {
             return Err(ProgramError::IllegalOwner);
         }
-    }
+    };
 }
