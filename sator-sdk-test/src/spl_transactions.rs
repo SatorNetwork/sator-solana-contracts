@@ -1,5 +1,4 @@
 use borsh::BorshDeserialize;
-use sator_sdk::{program::*, types::*};
 use solana_program::{program_pack::Pack, system_instruction};
 use solana_program_test::*;
 use solana_sdk::{
@@ -12,7 +11,8 @@ use solana_sdk::{
 };
 use std::mem;
 
-use crate::{stake_viewer_program_id, state};
+use sator_sdk::{program::PubkeyPatterns, types::{Lamports, MintPubkey, TokenAccountPubkey}};
+
 
 pub fn create_token_account(
     account_rent: Lamports,

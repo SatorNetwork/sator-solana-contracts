@@ -4,5 +4,5 @@ members = [
     "stake-viewer/program",
     "sator-sdk",
     "sator-reward/program",
+    "sator-sdk-test",
  ]
-# resolver = "2" 

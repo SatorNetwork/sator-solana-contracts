@@ -38,8 +38,6 @@ pub mod types;
 mod transactions;
 
 #[cfg(test)]
-mod spl_transactions;
-#[cfg(test)]
 mod tests_helpers;
 
 use sator_sdk::types::ProgramPubkey;

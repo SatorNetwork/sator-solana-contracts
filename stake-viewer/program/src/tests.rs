@@ -1,6 +1,5 @@
 use crate::{
-    instruction::StakeInput,
-    spl_transactions,
+    instruction::StakeInput,    
     state::{ViewerStake, ViewerStakePool},
     tests_helpers::*,
     transactions::{self, warp_seconds},
@@ -19,9 +18,11 @@ use solana_sdk::{
 };
 use std::mem;
 
+use sator_sdk_test::spl_transactions;
+
 use crate::{
     instruction::InitializeStakePoolInput, processor::process_instruction,
-    spl_transactions::create_initialize_mint, stake_viewer_program_id, state,
+     stake_viewer_program_id, state,
     transactions::initialize_stake, types::Rank,
 };
 
@@ -61,7 +62,7 @@ async fn flow() {
     let mint = Keypair::new();
     let mut client = program_test.start_with_context().await;
 
-    let transaction = create_initialize_mint(
+    let transaction = spl_transactions::create_initialize_mint(
         &stake_pool_owner,
         &mint,
         &stake_pool_owner.pubkey(),

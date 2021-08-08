@@ -85,7 +85,7 @@ impl Viewer {
 }
 
 impl Quiz {
-    pub const LEN: usize = 184;
+    pub const LEN: usize = 196;
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
             Ok(())
