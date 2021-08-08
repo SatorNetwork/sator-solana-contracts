@@ -8,7 +8,7 @@
         "unstaking"
     ],
     "_rust-analyzer.cargo.target": "bpfel-unknown-unknown",
-    "_rust-analyzer.cargo.features": [
+    "rust-analyzer.cargo.features": [
         "test-bpf"
       ]
 }

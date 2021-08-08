@@ -11,8 +11,10 @@ use solana_sdk::{
 };
 use std::mem;
 
-use sator_sdk::{program::PubkeyPatterns, types::{Lamports, MintPubkey, TokenAccountPubkey}};
-
+use sator_sdk::{
+    program::PubkeyPatterns,
+    types::{Lamports, MintPubkey, TokenAccountPubkey},
+};
 
 pub fn create_token_account(
     account_rent: Lamports,

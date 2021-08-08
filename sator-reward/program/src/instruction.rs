@@ -104,24 +104,32 @@ pub fn initialize_viewer(
     ))
 }
 
+#[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone, Copy)]
+pub struct WinnerInput {
+    pub owner : Pubkey,
+    pub points: u32,
+}
+
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone)]
 pub struct InitializeQuizInput {
-    pub winners: [Winner; 5],
+    /// less than or equal to 5
+    pub winners: Vec<WinnerInput>,
 }
 
 /// Creates [Instruction::InitializeQuiz] instruction which initializes `quiz` with results. Validates winner is viewer.
 /// `show`'s `quizes` latest number must be provided.
+/// Winners and viewers must be in same corresponding order.
 ///
 /// Accounts:
 ///  * `system_program`  - *program, implicit* to create accounts
 ///  * `sysvar_rent`     - *program, implicit* ensure that `quiz` are rent exempt.
 ///  * `clock`           - *program, implicit* to calculate prize won time
-///  * `show`            - used to validate `owner` and `quiz` and tak
 ///  * `owner`           - *signer, payer* and owner of `show`.
+///  * `show`            - used to validate `owner` and `quiz` and tak
 ///  * `show_authority` - *implicit* program derived account from `32 bytes show public key` based `program_id`.
 ///  * `quiz`            - *mutable, derived* from `show` + index
-//   * `winners`         - *collection* to validate winners are viewers
+//   * `viewers`         - *collection* to validate winners are viewers
 #[allow(clippy::too_many_arguments)]
 pub fn initialize_quiz(
     owner: &SignerPubkey,
@@ -148,6 +156,7 @@ pub fn initialize_quiz(
             vec![
                 AccountMeta::new_readonly(system_program::id(), false),
                 AccountMeta::new_readonly(sysvar::rent::id(), false),
+                AccountMeta::new_readonly(sysvar::clock::id(), false),
                 AccountMeta::new_readonly(*owner, true),
                 AccountMeta::new(*show, false),
                 AccountMeta::new_readonly(show_authority_pubkey, false),
@@ -163,8 +172,8 @@ pub fn initialize_quiz(
 ///
 /// Accounts:
 ///  * `spl_token`         
-///  * `show`               - used to validate `owner` and `quiz`
 ///  * `owner`              - *signer, payer* and owner of `show`.
+///  * `show`               - used to validate `owner` and `quiz`
 ///  * `show_authority`     - *implicit* program derived account from `32 bytes show public key` based `program_id`.
 //   * `winner`             - will be find in each quiz
 //   * `show_token_account` - *derived* source
@@ -174,8 +183,8 @@ pub fn initialize_quiz(
 pub fn claim(
     owner: &SignerPubkey,
     show: &SignerPubkey,
-    winner: Pubkey,
-    user_token_account: TokenAccountPubkey,
+    user_wallet_winner: &Pubkey,
+    user_token_account: &TokenAccountPubkey,
     quizes: Vec<Pubkey>,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let show_authority = Pubkey::find_program_address_for_pubkey(show, &program_id());
@@ -190,14 +199,13 @@ pub fn claim(
         &Instruction::Claim,
         [
             vec![
-                AccountMeta::new_readonly(system_program::id(), false),
                 AccountMeta::new_readonly(spl_token::id(), false),
-                AccountMeta::new_readonly(*show, false),
                 AccountMeta::new_readonly(*owner, true),
+                AccountMeta::new_readonly(*show, false),
                 AccountMeta::new_readonly(show_authority.0, false),
-                AccountMeta::new(winner, false),
+                AccountMeta::new(*user_wallet_winner, false),
                 AccountMeta::new(show_token_account, false),
-                AccountMeta::new(user_token_account, false),
+                AccountMeta::new(*user_token_account, false),
             ],
             quizes,
         ]

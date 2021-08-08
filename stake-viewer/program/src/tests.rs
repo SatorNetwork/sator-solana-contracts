@@ -1,5 +1,5 @@
 use crate::{
-    instruction::StakeInput,    
+    instruction::StakeInput,
     state::{ViewerStake, ViewerStakePool},
     tests_helpers::*,
     transactions::{self, warp_seconds},
@@ -21,9 +21,8 @@ use std::mem;
 use sator_sdk_test::spl_transactions;
 
 use crate::{
-    instruction::InitializeStakePoolInput, processor::process_instruction,
-     stake_viewer_program_id, state,
-    transactions::initialize_stake, types::Rank,
+    instruction::InitializeStakePoolInput, processor::process_instruction, stake_viewer_program_id,
+    state, transactions::initialize_stake, types::Rank,
 };
 
 pub fn new_program_test() -> ProgramTest {
