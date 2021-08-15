@@ -82,6 +82,7 @@ async fn flow() {
 
     let (transaction, stake_pool) = initialize_stake(
         &stake_pool_owner,
+        &stake_pool_owner,
         &mint.pubkey(),
         InitializeStakePoolInput {
             ranks: [
@@ -135,6 +136,7 @@ async fn flow() {
     assert!(stake_state.ranks[3].minimal_staking_time > 0);
     assert!(stake_state.ranks[3].amount > 0);
 
+    dbg!("Minting to pool wallet");
     let transaction = spl_transactions::mint_to(
         &stake_pool_owner,
         &mint.pubkey(),
@@ -150,11 +152,12 @@ async fn flow() {
         .await
         .unwrap();
 
+    dbg!("Create user token account");
     let (transaction, user_token_account) = spl_transactions::create_token_account(
         10000000,
         &mint.pubkey(),
-        &user_wallet,
-        &user_wallet,
+        &stake_pool_owner,
+        &stake_pool_owner,
         client.last_blockhash,
     );
 
@@ -164,21 +167,7 @@ async fn flow() {
         .await
         .unwrap();
 
-    let transaction = spl_transactions::mint_to(
-        &stake_pool_owner,
-        &mint.pubkey(),
-        &token_account,
-        &stake_pool_owner,
-        10000000000,
-        client.last_blockhash,
-    );
-
-    client
-        .banks_client
-        .process_transaction(transaction)
-        .await
-        .unwrap();
-
+    dbg!("Minting to user wallet");
     let transaction = spl_transactions::mint_to(
         &stake_pool_owner,
         &mint.pubkey(),
@@ -194,8 +183,10 @@ async fn flow() {
         .unwrap();
 
     let stake_duration = hour;
+    dbg!("Staking from user wallet");
     let (transaction, stake_account) = transactions::stake(
-        &user_wallet,
+        &stake_pool_owner,
+        &stake_pool_owner,
         &stake_pool.pubkey(),
         &user_token_account,
         StakeInput {
@@ -228,7 +219,7 @@ async fn flow() {
     assert_eq!(viewer_stake_account.amount, 1000);
 
     let transaction = transactions::unstake(
-        &user_wallet,
+        &stake_pool_owner,
         &stake_pool.pubkey(),
         &user_token_account,
         &stake_pool_owner,
@@ -242,7 +233,8 @@ async fn flow() {
         .expect_err("must fail to unlock");
 
     let (transaction, _) = transactions::stake(
-        &user_wallet,
+        &stake_pool_owner,
+        &stake_pool_owner,
         &stake_pool.pubkey(),
         &user_token_account,
         StakeInput {
@@ -273,7 +265,7 @@ async fn flow() {
     warp_seconds(&mut client, 5 * hour).await;
 
     let transaction = transactions::unstake(
-        &user_wallet,
+        &stake_pool_owner,
         &stake_pool.pubkey(),
         &user_token_account,
         &stake_pool_owner,

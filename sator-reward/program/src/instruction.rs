@@ -106,7 +106,7 @@ pub fn initialize_viewer(
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone, Copy)]
 pub struct WinnerInput {
-    pub owner : Pubkey,
+    pub owner: Pubkey,
     pub points: u32,
 }
 

@@ -37,24 +37,26 @@ pub enum Instruction {
 /// Creates [Instruction::InitializeStake] instruction which initializes `stake_pool` and `token_account`
 ///
 /// Accounts:
-///  * `system_program`  - *program, implicit* to create accounts
-///  * `sysvar_rent`     - *program, implicit* ensure that `token_account` and  `stake_pool` are rent exempt.
-///  * `spl_token`       - *program, implicit* spl token program to initialize `token_account`.
-///  * `owner`           - *signer, payer* and owner of `stake_pool`.
-///  * `stake_pool`      - *mutable, signer* not initialized not created account for stake data.
-///  * `stake_authority` - *implicit, derived* program derived account from `32 bytes stake public key` based `program_id`.
-///  * `token_account`   - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `stake_authority`.
-///  * `mint`            - used to initialize `token_account` for reference
+///  * `system_program`       - *program, implicit* to create accounts
+///  * `sysvar_rent`          - *program, implicit* ensure that `token_account` and  `stake_pool` are rent exempt.
+///  * `spl_token`            - *program, implicit* spl token program to initialize `token_account`.
+///  * `fee_payer`            -  *signer* pays for account creation
+///  * `stake_pool`           - *mutable, signer* not initialized not created account for stake data.
+///  * `stake_pool_owner`     - *signer, payer* and owner of `stake_pool`.
+///  * `stake_authority`      - *implicit, derived* program derived account from `32 bytes stake public key` based `program_id`.
+///  * `token_account`        - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `stake_authority`.
+///  * `mint`                 - used to initialize `token_account` for reference
 #[allow(clippy::too_many_arguments)]
 pub fn initialize_stake_pool(
-    owner: &SignerPubkey,
+    fee_payer: &SignerPubkey,
+    stake_pool_owner: &SignerPubkey,
     stake_pool: &SignerPubkey,
     mint: &MintPubkey,
     input: InitializeStakePoolInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let stake_authority =
         Pubkey::find_program_address_for_pubkey(stake_pool, &stake_viewer_program_id());
-    let token_account = Pubkey::create_with_seed(
+    let token_account_stake_pool = Pubkey::create_with_seed(
         &stake_authority.0,
         "ViewerStakePool::token_account",
         &spl_token::id(),
@@ -66,10 +68,11 @@ pub fn initialize_stake_pool(
             AccountMeta::new_readonly(system_program::id(), false),
             AccountMeta::new_readonly(sysvar::rent::id(), false),
             AccountMeta::new_readonly(spl_token::id(), false),
-            AccountMeta::new_readonly(*owner, true),
+            AccountMeta::new_readonly(*fee_payer, true),
+            AccountMeta::new_readonly(*stake_pool_owner, true),
             AccountMeta::new(*stake_pool, true),
             AccountMeta::new_readonly(stake_authority.0, false),
-            AccountMeta::new(token_account, false),
+            AccountMeta::new(token_account_stake_pool, false),
             AccountMeta::new_readonly(*mint, false),
         ],
     ))
@@ -83,10 +86,11 @@ pub fn initialize_stake_pool(
 ///  * `sysvar_rent`                - *program, implicit* to create `stake_account` which will be rent except if needed
 ///  * `clock`                      - *program, implicit*
 ///  * `spl_token`                  - *program, implicit*
-///  * `user_wallet`                - *signer, payer*
+///  * `fee_payer`                  - *signer* pays for account creation
 ///  * `stake_pool`                 - account of stake pool used
+///  * `stake_pool_owner`           - *signer* owner of stake pool
 ///  * `stake_authority`            - *derived*  as in [Instruction::InitializeStake]
-///  * `token_account_source`       - *mutable*
+///  * `token_account_user`         - *mutable* represents user and has approval for input amount
 ///  * `token_account_stake_target` - *derived, mutable, implicit*
 ///  * `stake_account`              - *implicit, derived, mutable* from `wallet` and `stake_authority`
 ///
@@ -95,9 +99,10 @@ pub fn initialize_stake_pool(
 /// - stake instruction is same instruction as initialize stake, so it could be made different by having separate stake (it will reduce amount of accounts during stake invocation)
 #[allow(clippy::too_many_arguments)]
 pub fn stake(
-    wallet: &Pubkey,
+    fee_payer: &SignerPubkey,
+    stake_pool_owner: &SignerPubkey,
     stake_pool: &Pubkey,
-    token_account_source: &TokenAccountPubkey,
+    token_account_user: &TokenAccountPubkey,
     input: StakeInput,
 ) -> Result<(solana_program::instruction::Instruction, Pubkey), ProgramError> {
     let (stake_authority, _) =
@@ -108,8 +113,11 @@ pub fn stake(
         &spl_token::id(),
     )?;
 
-    let stake_account =
-        Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &stake_viewer_program_id())?;
+    let user_stake_account = Pubkey::create_with_seed_for_pubkey(
+        &stake_authority,
+        token_account_user,
+        &stake_viewer_program_id(),
+    )?;
     Ok((
         solana_program::instruction::Instruction::new_with_borsh(
             crate::id(),
@@ -119,35 +127,36 @@ pub fn stake(
                 AccountMeta::new_readonly(sysvar::rent::id(), false),
                 AccountMeta::new_readonly(sysvar::clock::id(), false),
                 AccountMeta::new_readonly(spl_token::id(), false),
-                AccountMeta::new_readonly(*wallet, true),
+                AccountMeta::new_readonly(*fee_payer, true),
                 AccountMeta::new_readonly(*stake_pool, false),
+                AccountMeta::new_readonly(*stake_pool_owner, true),
                 AccountMeta::new_readonly(stake_authority, false),
-                AccountMeta::new(*token_account_source, false),
+                AccountMeta::new(*token_account_user, false),
                 AccountMeta::new(token_account_stake_target, false),
-                AccountMeta::new(stake_account.0, false),
+                AccountMeta::new(user_stake_account.0, false),
             ],
         ),
-        stake_account.0,
+        user_stake_account.0,
     ))
 }
 
 /// Creates [Instruction::Unstake] instruction which transfer `amount` from `token_account_stake_source` to `token_account_target` if and only if now is more than [crate::state::ViewerLock::Staked_until]
-/// Resets unlock
+/// Resets unlock.
+///
+/// Expects that `token_account_user` is same for `stake` and `unstake`
 ///
 /// Accounts:
 ///  * `clock`                      - *program, implicit*
 ///  * `spl_token`                  - *program, implicit*
-///  * `wallet`                     - as discussed - not signer
 ///  * `stake_pool`                 - state account initialized
 ///  * `stake_authority`            - *implicit*, derived from `owner`
-///  * `token_account_target`       - *mutable*
+///  * `token_account_user`         - *mutable* represent user account
 ///  * `token_account_stake_source` - *derived, mutable, implicit*
 ///  * `stake_account`              - *implicit, derived, mutable* from `stake_authority` and `wallet`
 ///  * `stake_pool_owner`           - *signer, payer*
 pub fn unstake(
-    wallet: &Pubkey,
     stake_pool: &Pubkey,
-    token_account_target: &TokenAccountPubkey,
+    token_account_user: &TokenAccountPubkey,
     stake_pool_owner: &SignerPubkey,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let (stake_authority, _) =
@@ -157,20 +166,22 @@ pub fn unstake(
         "ViewerStakePool::token_account",
         &spl_token::id(),
     )?;
-    let stake_account =
-        Pubkey::create_with_seed_for_pubkey(&stake_authority, wallet, &stake_viewer_program_id())?;
+    let user_stake_account = Pubkey::create_with_seed_for_pubkey(
+        &stake_authority,
+        token_account_user,
+        &stake_viewer_program_id(),
+    )?;
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
         &Instruction::Unstake,
         vec![
             AccountMeta::new_readonly(sysvar::clock::id(), false),
             AccountMeta::new_readonly(spl_token::id(), false),
-            AccountMeta::new_readonly(*wallet, false),
             AccountMeta::new_readonly(*stake_pool, false),
             AccountMeta::new_readonly(stake_authority, false),
-            AccountMeta::new(*token_account_target, false),
+            AccountMeta::new(*token_account_user, false),
             AccountMeta::new(token_account_stake_source, false),
-            AccountMeta::new(stake_account.0, false),
+            AccountMeta::new(user_stake_account.0, false),
             AccountMeta::new_readonly(*stake_pool_owner, true),
         ],
     ))

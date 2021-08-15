@@ -32,13 +32,14 @@ pub fn process_instruction(
         Instruction::InitializeStakePool(input) => {
             msg!("Instruction::InitializeStake");
             match accounts {
-                [system_program, rent, spl_token, owner, stake_pool, stake_authority, token_account, mint, ..] => {
+                [system_program, sysvar_rent, spl_token, fee_payer, stake_pool_owner, stake_pool, stake_authority, token_account, mint, ..] => {
                     initialize_stake(
                         program_id,
                         system_program,
-                        rent,
+                        sysvar_rent,
                         spl_token,
-                        owner,
+                        fee_payer,
+                        stake_pool_owner,
                         stake_pool,
                         stake_authority,
                         token_account,
@@ -52,19 +53,20 @@ pub fn process_instruction(
         Instruction::Stake(input) => {
             msg!("Instruction::Stake");
             match accounts {
-                [system_program, rent, clock, spl_token, user_wallet, stake_pool, stake_authority, token_account_source, token_account_stake_target, stake_account, ..] => {
+                [system_program, rent, clock, spl_token, fee_payer, stake_pool, stake_pool_owner, stake_authority, token_account_user, token_account_stake_target, user_stake_account, ..] => {
                     stake(
                         program_id,
                         system_program,
                         rent,
                         clock,
                         spl_token,
-                        user_wallet,
+                        fee_payer,
                         stake_pool,
+                        stake_pool_owner,
                         stake_authority,
-                        token_account_source,
+                        token_account_user,
                         token_account_stake_target,
-                        stake_account,
+                        user_stake_account,
                         input,
                     )
                 }
@@ -75,15 +77,14 @@ pub fn process_instruction(
         Instruction::Unstake => {
             msg!("Instruction::Unstake");
             match accounts {
-                [clock, spl_token, wallet, stake_pool, stake_authority, token_account_target, token_account_stake_source, stake_account, stake_pool_owner, ..] => {
+                [clock, spl_token, stake_pool, stake_authority, token_account_user, token_account_stake_source, stake_account, stake_pool_owner, ..] => {
                     unstake(
                         program_id,
                         clock,
                         spl_token,
-                        wallet,
                         stake_pool,
                         stake_authority,
-                        token_account_target,
+                        token_account_user,
                         token_account_stake_source,
                         stake_account,
                         stake_pool_owner,
@@ -100,14 +101,15 @@ fn initialize_stake<'a>(
     system_program: &AccountInfo<'a>,
     rent: &AccountInfo<'a>,
     spl_token: &AccountInfo<'a>,
-    owner: &AccountInfo<'a>,
+    fee_payer: &AccountInfo<'a>,
+    stake_pool_owner: &AccountInfo<'a>,
     stake_pool: &AccountInfo<'a>,
     stake_authority: &AccountInfo<'a>,
     token_account: &AccountInfo<'a>,
     mint: &AccountInfo<'a>,
     input: &crate::instruction::InitializeStakePoolInput,
 ) -> ProgramResult {
-    owner.is_signer()?;
+    stake_pool_owner.is_signer()?;
     stake_pool.is_signer()?;
     let (stake_authority_pubkey, bump_seed, token_account_pubkey) =
         derive_token_account(stake_pool, program_id)?;
@@ -118,7 +120,7 @@ fn initialize_stake<'a>(
     let rent_state = Rent::from_account_info(rent)?;
     let lamports = rent_state.minimum_balance(ViewerStakePool::LEN);
     invoke::create_account(
-        owner.clone(),
+        fee_payer.clone(),
         stake_pool.clone(),
         lamports,
         ViewerStakePool::LEN as u64,
@@ -131,7 +133,7 @@ fn initialize_stake<'a>(
     let lamports = rent_state.minimum_balance(spl_token::state::Account::LEN);
     invoke::create_account_with_seed_signed(
         system_program,
-        &owner,
+        &stake_pool_owner,
         &token_account,
         stake_authority,
         "ViewerStakePool::token_account",
@@ -151,7 +153,7 @@ fn initialize_stake<'a>(
 
     let mut state = stake_pool.deserialize::<ViewerStakePool>()?;
     state.ranks = input.ranks.clone();
-    state.owner = owner.pubkey();
+    state.owner = stake_pool_owner.pubkey();
     state.version = StateVersion::V1;
     state.serialize_const(&mut *stake_pool.try_borrow_mut_data()?)?;
 
@@ -181,18 +183,19 @@ fn stake<'a>(
     rent: &AccountInfo<'a>,
     clock: &AccountInfo<'a>,
     spl_token: &AccountInfo<'a>,
-    user_wallet: &AccountInfo<'a>,
+    fee_payer: &AccountInfo<'a>,
     stake_pool: &AccountInfo<'a>,
+    stake_pool_owner: &AccountInfo<'a>,
     stake_authority: &AccountInfo<'a>,
     token_account_source: &AccountInfo<'a>,
     token_account_stake_target: &AccountInfo<'a>,
     stake_account: &AccountInfo<'a>,
     input: crate::instruction::StakeInput,
 ) -> ProgramResult {
-    user_wallet.is_signer()?;
     stake_pool.is_owner(program_id)?;
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     stake_pool_state.initialized()?;
+    is_owner!(stake_pool_owner, stake_pool_state);
     let clock = Clock::from_account_info(clock)?;
     if input.duration < stake_pool_state.ranks[0].minimal_staking_time {
         return errors::Error::StakeStakingTimeMustBeMoreThanMinimal.into();
@@ -203,7 +206,7 @@ fn stake<'a>(
 
     let (stake_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
-        &user_wallet.pubkey(),
+        &token_account_source.pubkey(),
         program_id,
     )?;
 
@@ -215,7 +218,7 @@ fn stake<'a>(
     let stake_account_state = if stake_account.data_is_empty() {
         let stake_account_state = ViewerStake {
             amount: input.amount,
-            owner: user_wallet.pubkey(),
+            owner: token_account_source.pubkey(),
             staked_until: clock.unix_timestamp + input.duration,
             version: StateVersion::V1,
             staked_at: clock.unix_timestamp,
@@ -224,7 +227,7 @@ fn stake<'a>(
         let lamports = rent_state.minimum_balance(ViewerStake::LEN);
         invoke::create_account_with_seed_signed(
             system_program,
-            &user_wallet, // can split signers from payers, so that in future either user can stake or admin
+            &fee_payer,
             &stake_account,
             stake_authority,
             &seed[..],
@@ -243,7 +246,7 @@ fn stake<'a>(
             return errors::Error::StakeStakingTimeMustBeMoreThanPrevious.into();
         }
 
-        is_derived(stake_account_state.owner, user_wallet)?;
+        is_owner!(token_account_source, stake_account_state);
         stake_account_state.staked_until = clock.unix_timestamp + input.duration;
         stake_account_state.amount += input.amount;
         stake_account_state.staked_at = clock.unix_timestamp;
@@ -254,7 +257,7 @@ fn stake<'a>(
         spl_token,
         token_account_source,
         token_account_stake_target,
-        user_wallet,
+        stake_pool_owner,
         input.amount,
     )?;
     stake_account_state.serialize_const(&mut *stake_account.try_borrow_mut_data()?)?;
@@ -265,28 +268,27 @@ fn unstake<'a>(
     program_id: &ProgramPubkey,
     clock: &AccountInfo<'a>,
     spl_token: &AccountInfo<'a>,
-    wallet: &AccountInfo<'a>,
     stake_pool: &AccountInfo<'a>,
     stake_authority: &AccountInfo<'a>,
-    token_account_target: &AccountInfo<'a>,
+    token_account_user: &AccountInfo<'a>,
     token_account_stake_source: &AccountInfo<'a>,
-    stake_account: &AccountInfo<'a>,
+    user_stake_account: &AccountInfo<'a>,
     stake_pool_owner: &AccountInfo<'a>,
 ) -> ProgramResult {
-    let stake_account_state = stake_account.deserialize::<ViewerStake>()?;
-    let viewer_stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
-    stake_account_state.initialized()?;
-    stake_account.is_owner(program_id)?;
-
-    is_derived(stake_account_state.owner, wallet)?;
-
-    // as decided, right now admin dispatches instructions
-    // could do admin OR wallet
     stake_pool_owner.is_signer()?;
+
+    let viewer_stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
+    viewer_stake_pool_state.initialized()?;
+    stake_pool.is_owner(program_id)?;
     is_owner!(stake_pool_owner, viewer_stake_pool_state);
-    //wallet.is_signer()?;
+
+    let user_stake_account_state = user_stake_account.deserialize::<ViewerStake>()?;
+    user_stake_account_state.initialized()?;
+    user_stake_account.is_owner(program_id)?;
+    is_derived(user_stake_account_state.owner, token_account_user)?;
+
     let clock = Clock::from_account_info(clock)?;
-    if stake_account_state.staked_until > clock.unix_timestamp {
+    if user_stake_account_state.staked_until > clock.unix_timestamp {
         return errors::Error::UnstakeCanBeDoneOnlyAfterStakeTimeLapsed.into();
     }
 
@@ -294,28 +296,26 @@ fn unstake<'a>(
         derive_token_account(stake_pool, program_id)?;
     is_derived(token_account_stake_pubkey, token_account_stake_source)?;
 
-    let (stake_account_pubkey, _) =
-        Pubkey::create_with_seed_for_pubkey(&stake_authority_pubkey, &wallet.pubkey(), program_id)?;
+    let (stake_account_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
+        &stake_authority_pubkey,
+        &token_account_user.pubkey(),
+        program_id,
+    )?;
 
-    is_derived(stake_account_pubkey, stake_account)?;
+    is_derived(stake_account_pubkey, user_stake_account)?;
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
-
-    // as discussed, unstaking will not give multiplier reward
-    // let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
-    // let reward_amount = stake_pool_state.calculate_reward(stake_account_state)?;
 
     invoke::spl_token_transfer_signed(
         spl_token,
         token_account_stake_source,
-        token_account_target,
+        token_account_user,
         stake_authority,
-        stake_account_state.amount,
+        user_stake_account_state.amount,
         &authority_signature,
     )?;
 
-    burn_account(stake_account, stake_pool_owner);
-    //burn_account(stake_account, wallet);
+    burn_account(user_stake_account, stake_pool_owner);
 
     Ok(())
 }

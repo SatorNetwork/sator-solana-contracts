@@ -28,6 +28,7 @@ fn main() {
     let mut transaction = Transaction::new_with_payer(
         &[sator_stake_viewer::instruction::initialize_stake_pool(
             &keypair.pubkey(),
+            &keypair.pubkey(),
             &stake.pubkey(),
             &"13kBuVtxUT7CeddDgHfe61x3YdpBWTCKeB2Zg2LC4dab"
                 .parse()

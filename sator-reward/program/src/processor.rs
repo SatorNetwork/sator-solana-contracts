@@ -68,16 +68,7 @@ pub fn process_instruction(
             _ => Err(ProgramError::NotEnoughAccountKeys),
         },
         Instruction::InitializeQuiz(input) => match accounts {
-            [
-                system_program,
-                sysvar_rent,
-                clock,
-                owner,
-                show,
-                show_authority,
-                quiz,
-                ..                
-            ] => {
+            [system_program, sysvar_rent, clock, owner, show, show_authority, quiz, ..] => {
                 let winners = accounts.iter().skip(7);
                 initialize_quiz(
                     program_id,
@@ -95,15 +86,7 @@ pub fn process_instruction(
             _ => Err(ProgramError::NotEnoughAccountKeys),
         },
         Instruction::Claim => match accounts {
-            [
-            spl_token,
-              owner,
-             show,
-             show_authority,
-             user_wallet_winner,
-             show_token_account,
-             user_token_account,
-             ..] =>
+            [spl_token, owner, show, show_authority, user_wallet_winner, show_token_account, user_token_account, ..] =>
             {
                 let quizes = accounts.iter().skip(7);
                 claim(
@@ -126,7 +109,7 @@ pub fn process_instruction(
 fn claim<'a>(
     program_id: &Pubkey,
     spl_token: &AccountInfo<'a>,
-    owner: &AccountInfo<'a>, 
+    owner: &AccountInfo<'a>,
     show: &AccountInfo<'a>,
     show_authority: &AccountInfo<'a>,
     winner: &AccountInfo<'a>,
@@ -226,8 +209,6 @@ fn initialize_quiz<'a>(
 
     let winners_pubkeys: Vec<_> = input.winners.iter().map(|x| x.owner).collect();
 
-    
-
     let mut quiz_state = quiz.deserialize::<Quiz>()?;
     let winners_state: Vec<_> = input
         .winners
@@ -239,10 +220,10 @@ fn initialize_quiz<'a>(
             points: x.points,
         })
         .collect();
-        quiz_state.winners = <_>::default();
+    quiz_state.winners = <_>::default();
     for (i, winner) in winners_state.into_iter().enumerate() {
         quiz_state.winners[i] = winner;
-    }  
+    }
     quiz_state.uninitialized()?;
     quiz_state.index = show_state.quizes_index;
     quiz_state.version = StateVersion::V1;
@@ -254,7 +235,7 @@ fn initialize_quiz<'a>(
         )?;
         viewer.is_owner(program_id)?;
         let viewer = viewer.deserialize::<Viewer>()?;
-        viewer.initialized()?;        
+        viewer.initialized()?;
     }
 
     let clock = Clock::from_account_info(clock)?;
@@ -321,6 +302,7 @@ fn initialize_show<'a>(
     system_program: &AccountInfo<'a>,
     sysvar_rent: &AccountInfo<'a>,
     spl_token_program: &AccountInfo<'a>,
+    // fee_payer
     owner: &AccountInfo<'a>,
     show: &AccountInfo<'a>,
     show_authority: &AccountInfo<'a>,

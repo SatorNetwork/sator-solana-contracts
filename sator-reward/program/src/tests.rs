@@ -141,7 +141,7 @@ async fn flow() {
         .await
         .unwrap();
 
-        let show_state = client
+    let show_state = client
         .banks_client
         .get_account_data_with_borsh::<Show>(show.pubkey())
         .await
@@ -154,14 +154,18 @@ async fn flow() {
         &show_authority_pubkey,
         &user_wallet.pubkey(),
         &program_id(),
-    ).unwrap();
+    )
+    .unwrap();
 
     let transaction = initialize_quiz(
         &show_owner,
         &show.pubkey(),
         0,
         InitializeQuizInput {
-            winners: vec![WinnerInput { points: 42, owner: user_wallet.pubkey() }],
+            winners: vec![WinnerInput {
+                points: 42,
+                owner: user_wallet.pubkey(),
+            }],
         },
         vec![viewer_pubkey],
         client.last_blockhash,
