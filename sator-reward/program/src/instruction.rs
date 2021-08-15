@@ -20,7 +20,8 @@ pub struct InitializeShowInput {
 
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema, Clone)]
 pub struct InitializeViewerInput {
-    pub user_wallet: Pubkey,
+    /// something that uniquely represent user
+    pub user: Pubkey,
 }
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Clone)]
@@ -50,7 +51,7 @@ pub fn initialize_show(
     input: InitializeShowInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let show_authority = Pubkey::find_program_address_for_pubkey(&show.pubkey(), &program_id());
-    let token_account =
+    let token_account_show =
         Pubkey::create_with_seed(&show_authority.0, "Show::token_account", &spl_token::id())?;
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
@@ -62,13 +63,13 @@ pub fn initialize_show(
             AccountMeta::new_readonly(*owner, true),
             AccountMeta::new(*show, true),
             AccountMeta::new_readonly(show_authority.0, false),
-            AccountMeta::new(token_account, false),
+            AccountMeta::new(token_account_show, false),
             AccountMeta::new_readonly(*mint, false),
         ],
     ))
 }
 
-/// Creates [Instruction::InitializeViewer] instruction which proves the user passed QR code check, so that derived marker account created.
+/// Creates [Instruction::InitializeViewer] instruction which proves the user passed some check, so that derived marker account created.
 ///
 /// Accounts:
 ///  * `system_program`  - *program, implicit* to create accounts
@@ -87,7 +88,7 @@ pub fn initialize_viewer(
         Pubkey::find_program_address_for_pubkey(&show.pubkey(), &program_id());
     let (viewer_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
         &show_authority_pubkey,
-        &input.user_wallet,
+        &input.user,
         &program_id(),
     )?;
     Ok(solana_program::instruction::Instruction::new_with_borsh(
@@ -115,12 +116,15 @@ pub struct WinnerInput {
 pub struct InitializeQuizInput {
     /// less than or equal to 5
     pub winners: Vec<WinnerInput>,
+    /// amount of tokens to distribute for this quiz
+    pub amount: TokenAmount,
 }
 
 /// Creates [Instruction::InitializeQuiz] instruction which initializes `quiz` with results. Validates winner is viewer.
 /// `show`'s `quizes` latest number must be provided.
-/// Winners and viewers must be in same corresponding order.
-///
+/// Winners and viewers must be in same corresponding order (zip should work), and less or equal to 5.
+/// 
+/// Instruction does not forces specified locked amount to be presented on on `Show::token_account` which is risk for user will not be payed.
 /// Accounts:
 ///  * `system_program`  - *program, implicit* to create accounts
 ///  * `sysvar_rent`     - *program, implicit* ensure that `quiz` are rent exempt.
@@ -128,21 +132,22 @@ pub struct InitializeQuizInput {
 ///  * `owner`           - *signer, payer* and owner of `show`.
 ///  * `show`            - used to validate `owner` and `quiz` and tak
 ///  * `show_authority` - *implicit* program derived account from `32 bytes show public key` based `program_id`.
-///  * `quiz`            - *mutable, derived* from `show` + index
+///  * `quiz`            - *mutable, derived* from `show` + 'ShowState::index`
 //   * `viewers`         - *collection* to validate winners are viewers
 #[allow(clippy::too_many_arguments)]
 pub fn initialize_quiz(
     owner: &SignerPubkey,
     show: &Pubkey,
-    quizes: u16,
+    show_quizes_index: u16,
     winners: Vec<Pubkey>,
     input: InitializeQuizInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let (show_authority_pubkey, _) = Pubkey::find_program_address_for_pubkey(show, &program_id());
+        
     let (quiz_pubkey, _) = Pubkey::create_with_seed_index(
         &show_authority_pubkey,
         "Show::quizes",
-        quizes as u64,
+        show_quizes_index as u64,
         &program_id(),
     )?;
     let winners = winners

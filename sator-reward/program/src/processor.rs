@@ -86,13 +86,13 @@ pub fn process_instruction(
             _ => Err(ProgramError::NotEnoughAccountKeys),
         },
         Instruction::Claim => match accounts {
-            [spl_token, owner, show, show_authority, user_wallet_winner, show_token_account, user_token_account, ..] =>
+            [spl_token, show_owner, show, show_authority, user_wallet_winner, show_token_account, user_token_account, ..] =>
             {
                 let quizes = accounts.iter().skip(7);
                 claim(
                     program_id,
                     spl_token,
-                    owner,
+                    show_owner,
                     show,
                     show_authority,
                     user_wallet_winner,
@@ -109,7 +109,7 @@ pub fn process_instruction(
 fn claim<'a>(
     program_id: &Pubkey,
     spl_token: &AccountInfo<'a>,
-    owner: &AccountInfo<'a>,
+    show_owner: &AccountInfo<'a>,
     show: &AccountInfo<'a>,
     show_authority: &AccountInfo<'a>,
     winner: &AccountInfo<'a>,
@@ -119,8 +119,8 @@ fn claim<'a>(
 ) -> ProgramResult {
     let mut show_state = show.deserialize::<Show>()?;
     show_state.initialized()?;
-    is_owner!(owner, show_state);
-    owner.is_signer()?; // alternatively could make user_wallet_winner signer
+    is_owner!(show_owner, show_state);
+    show_owner.is_signer()?;
 
     let (show_authority_pubkey, bump_seed) =
         Pubkey::find_program_address_for_pubkey(&show.pubkey(), program_id);
@@ -130,12 +130,13 @@ fn claim<'a>(
         let mut quiz_state = quiz.deserialize::<Quiz>()?;
         let (quiz_pubkey, _) = Pubkey::create_with_seed_index(
             &show_authority_pubkey,
-            Show::quizes,
+            Show::QUIZES,
             quiz_state.index as u64,
             &program_id,
         )?;
         is_derived(quiz_pubkey, quiz)?;
         quiz.is_owner(program_id)?;
+        let total_points: u32 = quiz_state.winners.iter().map(|x| x.points).sum();
 
         if let Some(winner) = quiz_state
             .winners
@@ -145,12 +146,18 @@ fn claim<'a>(
         {
             winner.claimed = true;
 
+            let amount = quiz_state
+                .amount
+                .checked_mul(winner.points as u64)
+                .ok_or(ProgramError::Custom(crate::errors::Error::Overflow.into()))?
+                / total_points as u64;
+
             invoke::spl_token_transfer_signed(
                 spl_token,
                 show_token_account,
                 user_token_account,
                 show_authority,
-                winner.points as u64,
+                amount,
                 &authority_signature,
             )?;
         }
@@ -185,7 +192,7 @@ fn initialize_quiz<'a>(
     let authority_signature = ProgramPubkeySignature::new(show, bump_seed);
     let (quiz_pubkey, seed) = Pubkey::create_with_seed_index(
         &show_authority_pubkey,
-        Show::quizes,
+        Show::QUIZES,
         show_state.quizes_index as u64,
         &program_id,
     )?;
@@ -226,6 +233,7 @@ fn initialize_quiz<'a>(
     }
     quiz_state.uninitialized()?;
     quiz_state.index = show_state.quizes_index;
+    quiz_state.amount = input.amount;
     quiz_state.version = StateVersion::V1;
     for (i, viewer) in viewers.into_iter().enumerate() {
         let (viewer_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
@@ -266,7 +274,7 @@ fn initialize_viewer<'a>(
         Pubkey::find_program_address_for_pubkey(&show.pubkey(), program_id);
     let (viewer_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
         &show_authority_pubkey,
-        &input.user_wallet,
+        &input.user,
         &program_id,
     )?;
 
@@ -314,7 +322,7 @@ fn initialize_show<'a>(
         Pubkey::find_program_address_for_pubkey(&show.pubkey(), program_id);
     let token_account_pubkey = Pubkey::create_with_seed(
         &show_authority_pubkey,
-        Show::token_account,
+        Show::TOKEN_ACCOUNT,
         &spl_token::id(),
     )?;
     is_derived(show_authority_pubkey, show_authority)?;
@@ -342,7 +350,7 @@ fn initialize_show<'a>(
         owner,
         token_account,
         show_authority,
-        Show::token_account,
+        Show::TOKEN_ACCOUNT,
         lamports,
         spl_token::state::Account::LEN as u64,
         &spl_token::id(),

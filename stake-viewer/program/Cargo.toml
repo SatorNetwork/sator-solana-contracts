@@ -18,6 +18,7 @@ spl-token = { git = "https://github.com/solana-labs/solana-program-library.git",
 thiserror = "1.0"
 num-traits = "0.2"
 num-derive = "0.3"
+
 fixed = "1.9.0"
 sator-sdk = { path="../../sator-sdk",  features = [ "no-entrypoint" ]  }
 

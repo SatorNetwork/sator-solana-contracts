@@ -3,6 +3,7 @@ members = [
     "stake-viewer/cli",
     "stake-viewer/program",
     "sator-sdk",
+    "sator-reward/cli",
     "sator-reward/program",
     "sator-sdk-test",
  ]

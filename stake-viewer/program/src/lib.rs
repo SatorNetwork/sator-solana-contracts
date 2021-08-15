@@ -18,7 +18,7 @@
 //! );
 //! // Pubkey.to_string is longer than 32 chars limit in Solana for seed
 //! // ETH compatible something
-//! let seed = user_wallet.to_bytes();
+//! let seed = user_token_account.to_bytes();
 //! let seed = bs58::encode(&seed[..20]).into_string();
 //! let stake_account = Pubkey::create_with_seed(stake_authority, &seed, &stake_viewer_program_id());
 //!```

@@ -1,3 +1,0 @@
-(function() {var implementors = {};
-implementors["sator_stake_viewer"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html\" title=\"trait core::clone::Clone\">Clone</a> for <a class=\"struct\" href=\"sator_stake_viewer/types/struct.Ranks.html\" title=\"struct sator_stake_viewer::types::Ranks\">Ranks</a>","synthetic":false,"types":["sator_stake_viewer::types::Ranks"]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

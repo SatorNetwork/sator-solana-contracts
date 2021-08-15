@@ -109,7 +109,7 @@ async fn flow() {
 
     let show_authority = Pubkey::find_program_address_for_pubkey(&show.pubkey(), &program_id());
     let token_account =
-        Pubkey::create_with_seed(&show_authority.0, Show::token_account, &spl_token::id()).unwrap();
+        Pubkey::create_with_seed(&show_authority.0, Show::TOKEN_ACCOUNT, &spl_token::id()).unwrap();
 
     let transaction = spl_transactions::mint_to(
         &show_owner,
@@ -130,7 +130,7 @@ async fn flow() {
         &show_owner,
         &show.pubkey(),
         InitializeViewerInput {
-            user_wallet: user_wallet.pubkey(),
+            user: user_wallet.pubkey(),
         },
         client.last_blockhash,
     );
@@ -156,16 +156,18 @@ async fn flow() {
         &program_id(),
     )
     .unwrap();
-
+    let points = 42;
+    let quiz_amount = 666;
     let transaction = initialize_quiz(
         &show_owner,
         &show.pubkey(),
         0,
         InitializeQuizInput {
             winners: vec![WinnerInput {
-                points: 42,
+                points: points,
                 owner: user_wallet.pubkey(),
             }],
+            amount: quiz_amount,
         },
         vec![viewer_pubkey],
         client.last_blockhash,
@@ -213,5 +215,5 @@ async fn flow() {
         .unwrap();
 
     let account = get_token_account_state(&mut client.banks_client, &user_token_account).await;
-    assert_eq!(account.amount, 42);
+    assert_eq!(account.amount, 666);
 }

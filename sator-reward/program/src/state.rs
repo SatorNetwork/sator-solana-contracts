@@ -33,7 +33,6 @@ pub struct Viewer {
 }
 
 /// Up to N winners with points, derived from show + counter. '
-/// Prise pool is sum of tokens.
 #[repr(C)]
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default)]
 pub struct Quiz {
@@ -41,12 +40,13 @@ pub struct Quiz {
     pub winners: [Winner; 5],
     pub locked_until: UnixTimestamp,
     pub index: u16,
+    pub amount: TokenAmount,
 }
 
 impl Show {
     pub const LEN: usize = 43;
-    pub const token_account: &'static str = "Show::token_account";
-    pub const quizes: &'static str = "Show::quizes";
+    pub const TOKEN_ACCOUNT: &'static str = "Show::token_account";
+    pub const QUIZES: &'static str = "Show::quizes";
 
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
@@ -85,7 +85,7 @@ impl Viewer {
 }
 
 impl Quiz {
-    pub const LEN: usize = 196;
+    pub const LEN: usize = 204;
     pub fn uninitialized(&self) -> ProgramResult {
         if self.version == StateVersion::Uninitialized {
             Ok(())

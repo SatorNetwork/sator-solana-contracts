@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["check_id","Confirms that a given pubkey is equivalent to the program ID"],["id","Returns the program ID"],["stake_viewer_program_id",""]],"mod":[["errors",""],["instruction","Program instruction state"],["state","Program owned state"],["types",""]],"static":[["ID","The static program ID"]]});

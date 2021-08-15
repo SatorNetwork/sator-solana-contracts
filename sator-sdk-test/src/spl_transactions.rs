@@ -1,10 +1,7 @@
 use borsh::BorshDeserialize;
 use solana_program::{program_pack::Pack, system_instruction};
-use solana_program_test::*;
 use solana_sdk::{
     account::Account,
-    feature_set::spl_token_v2_multisig_fix,
-    instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
     signature::{Keypair, Signer},
     transaction::Transaction,

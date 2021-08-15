@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ViewerStake","User stake account state"],["ViewerStakePool","Pool state and rules"]]});
