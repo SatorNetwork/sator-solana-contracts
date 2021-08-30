@@ -57,7 +57,7 @@ mod tests_helpers;
 pub mod types;
 
 #[cfg(all(feature = "test-bpf", test))]
-mod transactions;
+pub mod transactions;
 
 use sator_sdk::types::ProgramPubkey;
 use solana_program::{account_info::AccountInfo, pubkey::Pubkey};

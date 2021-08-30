@@ -17,6 +17,7 @@ pub struct InitializeStakePoolInput {
     pub ranks: [Rank; 4],
 }
 
+
 #[derive(Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct StakeInput {
     /// any of times from [crate::state::ViewerStake::ranks] or more
@@ -76,6 +77,81 @@ pub fn initialize_stake_pool(
             AccountMeta::new_readonly(*mint, false),
         ],
     ))
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::{instruction::StakeInput, state::ViewerStake, types::Rank};
+
+    use super::{InitializeStakePoolInput, Instruction};
+    use borsh::*;
+
+    #[test]
+    fn test() {        
+        let input = Instruction::InitializeStakePool(InitializeStakePoolInput{
+            ranks: [
+                Rank {
+                    minimal_staking_time: 0,
+                    amount: 100,
+                },
+                Rank {
+                    minimal_staking_time: 30 * 60,
+                    amount: 200,
+                },
+                Rank {
+                    minimal_staking_time: 60 * 60,
+                    amount: 300,
+                },
+                Rank {
+                    minimal_staking_time: 2 * 60 * 60,
+                    amount: 500,
+                },
+            ]
+        });
+        
+        let data = hex::encode(input.try_to_vec().unwrap());
+        assert_eq!(data, "00000000000000000064000000000000000807000000000000c800000000000000100e0000000000002c01000000000000201c000000000000f401000000000000");
+
+        #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
+        pub struct InitializeStakePoolInput2 {
+            pub ranks: Vec<Rank>,
+        }
+
+        #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema)]
+        pub enum Instruction2 {
+            InitializeStakePool(InitializeStakePoolInput2),
+        }
+
+        let input = Instruction2::InitializeStakePool(InitializeStakePoolInput2{
+            ranks: vec![
+                Rank {
+                    minimal_staking_time: 0,
+                    amount: 100,
+                },
+                Rank {
+                    minimal_staking_time: 30 * 60,
+                    amount: 200,
+                },
+                Rank {
+                    minimal_staking_time: 60 * 60,
+                    amount: 300,
+                },
+                Rank {
+                    minimal_staking_time: 2 * 60 * 60,
+                    amount: 500,
+                },
+            ]
+        });
+        
+        let data = hex::encode(input.try_to_vec().unwrap());
+        assert_eq!(data, "0004000000000000000000000064000000000000000807000000000000c800000000000000100e0000000000002c01000000000000201c000000000000f401000000000000");
+
+        let input = Instruction::Unstake;
+        
+        let data = hex::encode(input.try_to_vec().unwrap());
+        assert_eq!(data, "02");
+    }
 }
 
 /// Creates [Instruction::Stake] instruction which transfer `amount` from `token_account_source` to `token_account_stake_target`.

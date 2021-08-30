@@ -29,6 +29,7 @@ assert_matches = "1.4.0"
 solana-validator = "1.7.6"
 bincode = "*"
 sator-sdk-test = { path="../../sator-sdk-test"  }
+hex = "*"
 
 [lib]
 crate-type = ["cdylib", "lib"]
