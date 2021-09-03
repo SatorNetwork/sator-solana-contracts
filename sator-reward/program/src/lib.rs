@@ -43,7 +43,6 @@
 //! )?;
 //!```
 
-
 #[cfg(all(target_arch = "bpf", not(feature = "no-entrypoint")))]
 mod entrypoint;
 pub mod errors;

@@ -272,11 +272,8 @@ fn initialize_viewer<'a>(
 
     let (show_authority_pubkey, bump_seed) =
         Pubkey::find_program_address_for_pubkey(&show.pubkey(), program_id);
-    let (viewer_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
-        &show_authority_pubkey,
-        &input.user,
-        &program_id,
-    )?;
+    let (viewer_pubkey, seed) =
+        Pubkey::create_with_seed_for_pubkey(&show_authority_pubkey, &input.user, &program_id)?;
 
     is_derived(show_authority_pubkey, show_authority)?;
     is_derived(viewer_pubkey, viewer)?;

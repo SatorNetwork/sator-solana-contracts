@@ -15,5 +15,6 @@ solana-client = "1.7.6"
 solana-logger = "1.7.6"
 solana-sdk = "1.7.6"
 solana-program = "1.7.6"
+spl-token = { git = "https://github.com/solana-labs/solana-program-library.git", features = [ "no-entrypoint" ], rev = "bcbed37faba7f5a67303027d1cd765b52e96ff8e" }
 sator-stake-viewer = { path="../program", features = [ "no-entrypoint" ] }
-
+sator-sdk-test = { path="../../sator-sdk-test"  }

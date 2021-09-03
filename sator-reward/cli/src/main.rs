@@ -1,6 +1,4 @@
-use sator_reward::{
-    instruction::InitializeShowInput, state::Show,
-};
+use sator_reward::{instruction::InitializeShowInput, state::Show};
 use solana_clap_utils::keypair::signer_from_path;
 use solana_client::rpc_client::RpcClient;
 use solana_program::{clock::UnixTimestamp, pubkey::Pubkey};
@@ -12,7 +10,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 
-fn main() {        
+fn main() {
     let config = solana_cli_config::Config::default();
     let keypair =
         solana_sdk::signature::read_keypair_file("/home/dz/validator-keypair.json".to_string())
@@ -28,12 +26,12 @@ fn main() {
     let mut transaction = Transaction::new_with_payer(
         &[sator_reward::instruction::initialize_show(
             &keypair.pubkey(),
-            &show.pubkey(),            
+            &show.pubkey(),
             &"13kBuVtxUT7CeddDgHfe61x3YdpBWTCKeB2Zg2LC4dab"
                 .parse()
                 .unwrap(),
-            InitializeShowInput  {
-                reward_lock_time: 1 * 60 * 60 ,
+            InitializeShowInput {
+                reward_lock_time: 1 * 60 * 60,
             },
         )
         .unwrap()],

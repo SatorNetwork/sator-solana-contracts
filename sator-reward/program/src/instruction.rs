@@ -86,11 +86,8 @@ pub fn initialize_viewer(
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let (show_authority_pubkey, _) =
         Pubkey::find_program_address_for_pubkey(&show.pubkey(), &program_id());
-    let (viewer_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
-        &show_authority_pubkey,
-        &input.user,
-        &program_id(),
-    )?;
+    let (viewer_pubkey, _) =
+        Pubkey::create_with_seed_for_pubkey(&show_authority_pubkey, &input.user, &program_id())?;
     Ok(solana_program::instruction::Instruction::new_with_borsh(
         crate::id(),
         &Instruction::InitializeViewer(input),
@@ -123,7 +120,7 @@ pub struct InitializeQuizInput {
 /// Creates [Instruction::InitializeQuiz] instruction which initializes `quiz` with results. Validates winner is viewer.
 /// `show`'s `quizes` latest number must be provided.
 /// Winners and viewers must be in same corresponding order (zip should work), and less or equal to 5.
-/// 
+///
 /// Instruction does not forces specified locked amount to be presented on on `Show::token_account` which is risk for user will not be payed.
 /// Accounts:
 ///  * `system_program`  - *program, implicit* to create accounts
@@ -143,7 +140,7 @@ pub fn initialize_quiz(
     input: InitializeQuizInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let (show_authority_pubkey, _) = Pubkey::find_program_address_for_pubkey(show, &program_id());
-        
+
     let (quiz_pubkey, _) = Pubkey::create_with_seed_index(
         &show_authority_pubkey,
         "Show::quizes",
