@@ -157,6 +157,7 @@ pub fn is_derived(relation: Pubkey, related: &AccountInfo) -> ProgramResult {
     Ok(())
 }
 
+
 /// burns account
 pub fn burn_account(burned: &AccountInfo, beneficiary: &AccountInfo) {
     let mut from = burned.try_borrow_mut_lamports().unwrap();
@@ -175,6 +176,45 @@ macro_rules! is_owner {
     ) => {
         if $account_state.owner != $owner_pubkey.pubkey() {
             return Err(ProgramError::IllegalOwner);
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! ensure_owner {
+    (
+        $owner_pubkey:expr,
+        $account_state:expr,
+        $error:path
+    ) => {
+        if $account_state.owner != $owner_pubkey.pubkey() {
+            return Err($error.into())
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! ensure_eq {
+    (
+        $a:expr,
+        $b:expr,
+        $error:path
+    ) => {
+        if $a != $b {
+            return Err($error.into())
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! ensure_derived {
+    (
+        $relation:expr,
+        $related:expr,
+        $error:path
+    ) => {
+        if $relation != $related.pubkey() {
+            return Err($error.into())
         }
     };
 }

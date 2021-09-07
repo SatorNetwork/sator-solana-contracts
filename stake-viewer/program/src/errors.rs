@@ -9,6 +9,13 @@ pub enum Error {
     UnstakeCanBeDoneOnlyAfterStakeTimeLapsed,
     UnstakeStakeAccountNotDerivedFromWalletStakeProgram,
     UnstakeOverflow,
+    StakePoolOwnerMustOwnStake,
+    StakeAuthorityMustBeDerivedFromStake,
+    StakeTokenAccountMustBeDerivedFromStake,
+    StakeUserMustBeDerivedFromUserToken,
+    UserTokenAccountMustBeOwnerOfStakeUserAccount,
+    StakePoolMustBeOwnedByThisContract,
+    StakeUserAccountMustBeOwnedByThisContract,
 }
 
 impl Error {

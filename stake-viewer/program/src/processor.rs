@@ -2,10 +2,10 @@ use std::borrow::Borrow;
 use std::error::Error;
 
 use sator_sdk::invoke::{self, ProgramPubkeySignature};
-use sator_sdk::program::*;
 use sator_sdk::state::StateVersion;
 use sator_sdk::types::*;
 use sator_sdk::{borsh::*, is_owner};
+use sator_sdk::{ensure_derived, ensure_eq, ensure_owner, program::*};
 use solana_program::clock::Clock;
 use solana_program::msg;
 use solana_program::program_error::{PrintProgramError, ProgramError};
@@ -189,13 +189,22 @@ fn stake<'a>(
     stake_authority: &AccountInfo<'a>,
     token_account_source: &AccountInfo<'a>,
     token_account_stake_target: &AccountInfo<'a>,
-    stake_account: &AccountInfo<'a>,
+    stake_user_account: &AccountInfo<'a>,
     input: crate::instruction::StakeInput,
 ) -> ProgramResult {
-    stake_pool.is_owner(program_id)?;
+    ensure_eq!(
+        program_id,
+        stake_pool.owner,
+        errors::Error::StakePoolMustBeOwnedByThisContract
+    );
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     stake_pool_state.initialized()?;
-    is_owner!(stake_pool_owner, stake_pool_state);
+
+    ensure_owner!(
+        stake_pool_owner,
+        stake_pool_state,
+        errors::Error::StakePoolOwnerMustOwnStake
+    );
     let clock = Clock::from_account_info(clock)?;
     if input.duration < stake_pool_state.ranks[0].minimal_staking_time {
         return errors::Error::StakeStakingTimeMustBeMoreThanMinimal.into();
@@ -210,13 +219,25 @@ fn stake<'a>(
         program_id,
     )?;
 
-    is_derived(stake_authority_pubkey, stake_authority)?;
-    is_derived(token_account_pubkey, token_account_stake_target)?;
-    is_derived(stake_account_pubkey, stake_account)?;
+    ensure_derived!(
+        stake_authority_pubkey,
+        stake_authority,
+        errors::Error::StakeAuthorityMustBeDerivedFromStake
+    );
+    ensure_derived!(
+        token_account_pubkey,
+        token_account_stake_target,
+        errors::Error::StakeTokenAccountMustBeDerivedFromStake
+    );
+    ensure_derived!(
+        stake_account_pubkey,
+        stake_user_account,
+        errors::Error::StakeUserMustBeDerivedFromUserToken
+    );
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
-    let stake_account_state = if stake_account.data_is_empty() {
-        let stake_account_state = ViewerStake {
+    let stake_user_account_state = if stake_user_account.data_is_empty() {
+        let stake_user_account_state = ViewerStake {
             amount: input.amount,
             owner: token_account_source.pubkey(),
             staked_until: clock.unix_timestamp + input.duration,
@@ -228,7 +249,7 @@ fn stake<'a>(
         invoke::create_account_with_seed_signed(
             system_program,
             &fee_payer,
-            &stake_account,
+            &stake_user_account,
             stake_authority,
             &seed[..],
             lamports,
@@ -236,21 +257,29 @@ fn stake<'a>(
             program_id,
             &authority_signature,
         )?;
-        stake_account_state
+        stake_user_account_state
     } else {
-        stake_account.is_owner(program_id)?;
-        let mut stake_account_state = stake_account.deserialize::<ViewerStake>()?;
-        stake_account_state.initialized()?;
+        ensure_eq!(
+            program_id,
+            stake_user_account.owner,
+            errors::Error::StakeUserAccountMustBeOwnedByThisContract
+        );
+        let mut stake_user_account_state = stake_user_account.deserialize::<ViewerStake>()?;
+        stake_user_account_state.initialized()?;
 
-        if input.duration < stake_account_state.duration() {
+        if input.duration < stake_user_account_state.duration() {
             return errors::Error::StakeStakingTimeMustBeMoreThanPrevious.into();
         }
 
-        is_owner!(token_account_source, stake_account_state);
-        stake_account_state.staked_until = clock.unix_timestamp + input.duration;
-        stake_account_state.amount += input.amount;
-        stake_account_state.staked_at = clock.unix_timestamp;
-        stake_account_state
+        ensure_owner!(
+            token_account_source,
+            stake_user_account_state,
+            errors::Error::UserTokenAccountMustBeOwnerOfStakeUserAccount
+        );
+        stake_user_account_state.staked_until = clock.unix_timestamp + input.duration;
+        stake_user_account_state.amount += input.amount;
+        stake_user_account_state.staked_at = clock.unix_timestamp;
+        stake_user_account_state
     };
 
     invoke::spl_token_transfer(
@@ -260,7 +289,7 @@ fn stake<'a>(
         stake_pool_owner,
         input.amount,
     )?;
-    stake_account_state.serialize_const(&mut *stake_account.try_borrow_mut_data()?)?;
+    stake_user_account_state.serialize_const(&mut *stake_user_account.try_borrow_mut_data()?)?;
     Ok(())
 }
 
@@ -279,12 +308,26 @@ fn unstake<'a>(
 
     let viewer_stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     viewer_stake_pool_state.initialized()?;
-    stake_pool.is_owner(program_id)?;
-    is_owner!(stake_pool_owner, viewer_stake_pool_state);
+    ensure_eq!(
+        program_id,
+        stake_pool.owner,
+        errors::Error::StakePoolMustBeOwnedByThisContract
+    );
+    ensure_eq!(
+        program_id,
+        user_stake_account.owner,
+        errors::Error::StakeUserAccountMustBeOwnedByThisContract
+    );
+
+    ensure_owner!(
+        stake_pool_owner,
+        viewer_stake_pool_state,
+        errors::Error::StakePoolOwnerMustOwnStake
+    );
 
     let user_stake_account_state = user_stake_account.deserialize::<ViewerStake>()?;
     user_stake_account_state.initialized()?;
-    user_stake_account.is_owner(program_id)?;
+
     is_derived(user_stake_account_state.owner, token_account_user)?;
 
     let clock = Clock::from_account_info(clock)?;
