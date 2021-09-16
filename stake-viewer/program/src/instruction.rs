@@ -37,15 +37,15 @@ pub enum Instruction {
 /// Creates [Instruction::InitializeStake] instruction which initializes `stake_pool` and `token_account`
 ///
 /// Accounts:
-///  * `system_program`       - *program, implicit* to create accounts
-///  * `sysvar_rent`          - *program, implicit* ensure that `token_account` and  `stake_pool` are rent exempt.
-///  * `spl_token`            - *program, implicit* spl token program to initialize `token_account`.
-///  * `fee_payer`            -  *signer* pays for account creation
-///  * `stake_pool`           - *mutable, signer* not initialized not created account for stake data.
-///  * `stake_pool_owner`     - *signer, payer* and owner of `stake_pool`.
-///  * `stake_authority`      - *implicit, derived* program derived account from `32 bytes stake public key` based `program_id`.
-///  * `token_account`        - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `stake_authority`.
-///  * `mint`                 - used to initialize `token_account` for reference
+///  * `system_program`           - *program, implicit* to create accounts
+///  * `sysvar_rent`              - *program, implicit* ensure that `token_account` and  `stake_pool` are rent exempt.
+///  * `spl_token`                - *program, implicit* spl token program to initialize `token_account`.
+///  * `fee_payer`                -  *signer* pays for account creation
+///  * `stake_pool_owner`         - *signer, payer* and owner of `stake_pool`.
+///  * `stake_pool`               - *mutable, signer* not initialized not created account for stake data.
+///  * `stake_authority`          - *implicit, derived* program derived account from `32 bytes stake public key` based `program_id`.
+///  * `token_account`            - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `stake_authority`.
+///  * `token_account_stake_pool` - used to initialize `token_account` for reference
 #[allow(clippy::too_many_arguments)]
 pub fn initialize_stake_pool(
     fee_payer: &SignerPubkey,
@@ -156,17 +156,17 @@ mod tests {
 /// If `stake_account` initialized, resets timer.
 ///
 /// Accounts:
-///  * `system_program`             - *program, implicit*
-///  * `sysvar_rent`                - *program, implicit* to create `stake_account` which will be rent except if needed
-///  * `clock`                      - *program, implicit*
-///  * `spl_token`                  - *program, implicit*
-///  * `fee_payer`                  - *signer* pays for account creation
-///  * `stake_pool`                 - account of stake pool used
-///  * `stake_pool_owner`           - *signer* owner of stake pool
-///  * `stake_authority`            - *derived*  as in [Instruction::InitializeStake]
-///  * `token_account_user`         - *mutable* represents user and has approval for input amount
-///  * `token_account_stake_target` - *derived, mutable, implicit*
-///  * `stake_account`              - *implicit, derived, mutable* from `wallet` and `stake_authority`
+///  * `system_program`                - *program, implicit*
+///  * `sysvar_rent`                   - *program, implicit* to create `stake_account` which will be rent except if needed
+///  * `clock`                         - *program, implicit*
+///  * `spl_token`                     - *program, implicit*
+///  * `fee_payer`                     - *signer* pays for account creation
+///  * `stake_pool`                    - account of stake pool used
+///  * `stake_pool_owner`              - *signer* owner of stake pool
+///  * `stake_authority`               - *derived*  as in [Instruction::InitializeStake]
+///  * `token_account_user`            - *mutable* represents user and has approval for input amount
+///  * `token_account_stake_target`    - *derived, mutable, implicit*
+///  * `user_stake_account`            - *implicit, derived, mutable* from `wallet` and `stake_authority`
 ///
 /// Notes:
 /// - current design does not creates token account to stake tokens, just counts amount in stake.
