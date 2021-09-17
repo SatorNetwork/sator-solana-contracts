@@ -26,12 +26,12 @@ fn main() {
     let config = solana_cli_config::Config::default();
     let mut options: Options = Options::default();
     options.mint = true;
-    //options.all_exists = true;
+    options.all_exists = false;
 
 
     if options.all_exists {
-        let mut key = "[115, 91, 202, 172, 215, 254, 239, 102, 127, 239, 39, 117, 165, 14, 239, 60, 242, 138, 216, 4, 183, 230, 36, 122, 133, 128, 12, 201, 176, 200, 144, 182, 17, 64, 8, 222, 37, 225, 40, 90, 140, 94, 207, 194, 215, 172, 41, 156, 184, 231, 78, 111, 144, 102, 2, 211, 156, 35, 90, 19, 91, 13, 43, 209]".to_string();
-        let mut cursor = std::io::Cursor::new(key);
+        let mut fee_payer = "[115, 91, 202, 172, 215, 254, 239, 102, 127, 239, 39, 117, 165, 14, 239, 60, 242, 138, 216, 4, 183, 230, 36, 122, 133, 128, 12, 201, 176, 200, 144, 182, 17, 64, 8, 222, 37, 225, 40, 90, 140, 94, 207, 194, 215, 172, 41, 156, 184, 231, 78, 111, 144, 102, 2, 211, 156, 35, 90, 19, 91, 13, 43, 209]".to_string();
+        let mut cursor = std::io::Cursor::new(fee_payer);
         let keypair = solana_sdk::signature::read_keypair(&mut cursor).unwrap();        
         
         let rpc_client = RpcClient::new("https://api.devnet.solana.com".to_string());
@@ -75,9 +75,10 @@ fn main() {
         println!("stake {:?}", signature);
 
     } else {
-        let keypair =
+        let fee_payer =
             solana_sdk::signature::read_keypair_file("/home/dz/validator-keypair.json".to_string())
                 .unwrap();
+        println!("fee payer kp: {:?}", fee_payer);                
         let rpc_client = RpcClient::new("https://api.devnet.solana.com".to_string());
         solana_logger::setup_with_default("solana=debug");
 
@@ -89,10 +90,11 @@ fn main() {
         let mint = {
             if options.mint {
                 let mint = Keypair::new();
+                println!("mint kp: {:?}", mint);
                 let transaction = sator_sdk_test::spl_transactions::create_initialize_mint(
-                    &keypair,
+                    &fee_payer,
                     &mint,
-                    &keypair.pubkey(),
+                    &fee_payer.pubkey(),
                     100000000,
                     2,
                     rpc_client.get_recent_blockhash().unwrap().0,
@@ -104,15 +106,18 @@ fn main() {
                     )
                     .unwrap();
 
-                println!("mint {:?}", signature);
+                println!("mint trx :{:?}", signature);
 
                 let (transaction, pubkey) = sator_sdk_test::spl_transactions::create_token_account(
                     1000000000,
                     &mint.pubkey(),
-                    &keypair,
-                    &keypair,
+                    &fee_payer,
+                    &fee_payer,
                     rpc_client.get_recent_blockhash().unwrap().0,
                 );
+
+                println!("user token account kp: {:?}", pubkey);
+                let pubkey = pubkey.pubkey();
 
                 token_account = Some(pubkey);
                 let signature = rpc_client
@@ -125,11 +130,11 @@ fn main() {
                 println!("user token account (wallet): {:?}", pubkey);
 
                 let transaction = sator_sdk_test::spl_transactions::mint_to(
-                    &keypair,
+                    &fee_payer,
                     &mint.pubkey(),
                     &pubkey,
-                    &keypair,
-                    1,
+                    &fee_payer,
+                    10000000,
                     rpc_client.get_recent_blockhash().unwrap().0,
                 );
                 let signature = rpc_client
@@ -138,6 +143,9 @@ fn main() {
                         CommitmentConfig::confirmed(),
                     )
                     .unwrap();
+
+                println!("minted to trx: {:?}", signature);                    
+                
                 mint.pubkey().to_string()
             } else {
                 "13kBuVtxUT7CeddDgHfe61x3YdpBWTCKeB2Zg2LC4dab".to_string()
@@ -145,10 +153,11 @@ fn main() {
         };
 
         let stake = Keypair::new();
+        println!("stake pool pk :{:?}", stake);
         let mut transaction = Transaction::new_with_payer(
             &[sator_stake_viewer::instruction::initialize_stake_pool(
-                &keypair.pubkey(),
-                &keypair.pubkey(),
+                &fee_payer.pubkey(),
+                &fee_payer.pubkey(),
                 &stake.pubkey(),
                 &mint.parse().unwrap(),
                 InitializeStakePoolInput {
@@ -173,12 +182,12 @@ fn main() {
                 },
             )
             .unwrap()],
-            Some(&keypair.pubkey()),
+            Some(&fee_payer.pubkey()),
         );
 
         let (recent_blockhash, fee_calculator) = rpc_client.get_recent_blockhash().unwrap();
 
-        let signers = vec![&keypair, &stake];
+        let signers = vec![&fee_payer, &stake];
         transaction.sign(&signers, recent_blockhash);
 
         let signature = rpc_client
@@ -188,13 +197,13 @@ fn main() {
             )
             .unwrap();
 
-        println!("initialize {:?}", signature);
+        println!("initialize trx: {:?}", signature);
 
         if let Some(token) = token_account {
             let mut transaction = Transaction::new_with_payer(
                 &[sator_stake_viewer::instruction::stake(
-                    &keypair.pubkey(),
-                    &keypair.pubkey(),
+                    &fee_payer.pubkey(),
+                    &fee_payer.pubkey(),
                     &stake.pubkey(),
                     &token,
                     StakeInput {
@@ -204,12 +213,12 @@ fn main() {
                 )
                 .unwrap()
                 .0],
-                Some(&keypair.pubkey()),
+                Some(&fee_payer.pubkey()),
             );
 
             let (recent_blockhash, fee_calculator) = rpc_client.get_recent_blockhash().unwrap();
 
-            let signers = vec![&keypair];
+            let signers = vec![&fee_payer];
             transaction.sign(&signers, recent_blockhash);
 
             let signature = rpc_client
@@ -219,7 +228,7 @@ fn main() {
                 )
                 .unwrap();
 
-            println!("stake {:?}", signature);
+            println!("viewer stake trx{:?}", signature);
         }
     }
 }

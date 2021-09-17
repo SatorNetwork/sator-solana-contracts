@@ -19,7 +19,7 @@ pub fn create_token_account(
     owner: &Keypair,
     payer: &Keypair,
     recent_blockhash: solana_program::hash::Hash,
-) -> (Transaction, Pubkey) {
+) -> (Transaction, Keypair) {
     let token_account = Keypair::new();
     let instructions = vec![
         system_instruction::create_account(
@@ -42,7 +42,7 @@ pub fn create_token_account(
 
     transaction.sign(&[owner, &token_account, payer], recent_blockhash);
 
-    (transaction, token_account.pubkey())
+    (transaction, token_account)
 }
 
 /// Simplified mint instruction
