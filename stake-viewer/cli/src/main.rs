@@ -1,3 +1,4 @@
+/// проверить инит пул + стейк с раздельными овнер/пеер + показать мне где ты создаешь минт и подвязываешь под него кошелек что б я сравнил с нашими инструкциями, и вообще нам бы еще небольшой звоночек с Димой Момотом на троих сообразить - остаточно расставить точки над И в плане гет стейк данных (откуда удобней/что хранит у себя что мб через рпс и тд) + я к тому моменту постараюсь проверить работоспособность реворд контрактов и мб вопросы собрать если будут
 use std::io::{Read, Cursor};
 use sator_sdk::program::PubkeyPatterns;
 use sator_stake_viewer::{
@@ -78,7 +79,7 @@ fn main() {
         let fee_payer =
             solana_sdk::signature::read_keypair_file("/home/dz/validator-keypair.json".to_string())
                 .unwrap();
-        println!("fee payer kp: {:?}", fee_payer);                
+        println!("fee payer pk: {:?}", fee_payer.to_bytes());                
         let rpc_client = RpcClient::new("https://api.devnet.solana.com".to_string());
         solana_logger::setup_with_default("solana=debug");
 
@@ -90,7 +91,7 @@ fn main() {
         let mint = {
             if options.mint {
                 let mint = Keypair::new();
-                println!("mint kp: {:?}", mint);
+                println!("mint pk: {:?}", mint.to_bytes());
                 let transaction = sator_sdk_test::spl_transactions::create_initialize_mint(
                     &fee_payer,
                     &mint,
@@ -116,7 +117,7 @@ fn main() {
                     rpc_client.get_recent_blockhash().unwrap().0,
                 );
 
-                println!("user token account kp: {:?}", pubkey);
+                println!("user token account pk: {:?}", pubkey.to_bytes());
                 let pubkey = pubkey.pubkey();
 
                 token_account = Some(pubkey);
@@ -153,7 +154,7 @@ fn main() {
         };
 
         let stake = Keypair::new();
-        println!("stake pool pk :{:?}", stake);
+        println!("stake pool pk: {:?}", stake.to_bytes());
         let mut transaction = Transaction::new_with_payer(
             &[sator_stake_viewer::instruction::initialize_stake_pool(
                 &fee_payer.pubkey(),
@@ -228,7 +229,7 @@ fn main() {
                 )
                 .unwrap();
 
-            println!("viewer stake trx{:?}", signature);
+            println!("viewer stake trx: {:?}", signature);
         }
     }
 }

@@ -41,7 +41,7 @@ pub enum Instruction {
 ///  * `owner`                 - *signer, payer* and owner of `show`.
 ///  * `show`                  - *mutable, signer* not initialized not created account for show data.
 ///  * `show_authority`        - *implicit* program derived account from `32 bytes show public key` based `program_id`.
-///  * `token_account`         - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `show_authority`.
+///  * `show_token_account`    - *implicit, mutable, derived* not created program derived account to create `spl_token`  under `show_authority`.
 ///  * `mint`                  - used to initialize `token_account` for reference
 #[allow(clippy::too_many_arguments)]
 pub fn initialize_show(
@@ -70,7 +70,7 @@ pub fn initialize_show(
 }
 
 /// Creates [Instruction::InitializeViewer] instruction which proves the user passed some check, so that derived marker account created.
-///
+/// Make sure user can participate in quizzes.
 /// Accounts:
 ///  * `system_program`  - *program, implicit* to create accounts
 ///  * `sysvar_rent`     - *program, implicit* ensure that `token_account` and  `show` are rent exempt.
@@ -104,6 +104,7 @@ pub fn initialize_viewer(
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone, Copy)]
 pub struct WinnerInput {
+    // user 
     pub owner: Pubkey,
     pub points: u32,
 }
@@ -118,14 +119,14 @@ pub struct InitializeQuizInput {
 }
 
 /// Creates [Instruction::InitializeQuiz] instruction which initializes `quiz` with results. Validates winner is viewer.
-/// `show`'s `quizes` latest number must be provided.
+/// `show`'s `quizzes` latest number must be provided.
 /// Winners and viewers must be in same corresponding order (zip should work), and less or equal to 5.
 ///
 /// Instruction does not forces specified locked amount to be presented on on `Show::token_account` which is risk for user will not be payed.
 /// Accounts:
 ///  * `system_program`  - *program, implicit* to create accounts
 ///  * `sysvar_rent`     - *program, implicit* ensure that `quiz` are rent exempt.
-///  * `clock`           - *program, implicit* to calculate prize won time
+///  * `sysvar_clock`    - *program, implicit* to calculate prize won time
 ///  * `owner`           - *signer, payer* and owner of `show`.
 ///  * `show`            - used to validate `owner` and `quiz` and tak
 ///  * `show_authority` - *implicit* program derived account from `32 bytes show public key` based `program_id`.
@@ -135,7 +136,7 @@ pub struct InitializeQuizInput {
 pub fn initialize_quiz(
     owner: &SignerPubkey,
     show: &Pubkey,
-    show_quizes_index: u16,
+    show_quizzes_index: u16,
     winners: Vec<Pubkey>,
     input: InitializeQuizInput,
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
@@ -144,7 +145,7 @@ pub fn initialize_quiz(
     let (quiz_pubkey, _) = Pubkey::create_with_seed_index(
         &show_authority_pubkey,
         "Show::quizes",
-        show_quizes_index as u64,
+        show_quizzes_index as u64,
         &program_id(),
     )?;
     let winners = winners
@@ -173,14 +174,14 @@ pub fn initialize_quiz(
 /// Creates [Instruction::Claim] wins on behalf of user. Transfers tokens from show account to user account, sets win claimed.
 ///
 /// Accounts:
-///  * `spl_token`         
+///  * `spl_token`          - 
 ///  * `owner`              - *signer, payer* and owner of `show`.
 ///  * `show`               - used to validate `owner` and `quiz`
 ///  * `show_authority`     - *implicit* program derived account from `32 bytes show public key` based `program_id`.
-//   * `winner`             - will be find in each quiz
-//   * `show_token_account` - *derived* source
+//   * `winner`             - user who got win points and stored in quiz data, will be find in each quiz
+//   * `show_token_account` - *derived* source of tokens to transfer to `winner`
 //   * `user_token_account` - destination
-///  * `quizes`             - *mutable, derived* to claim rewards from
+///  * `quizzes`            - *mutable, derived* to claim rewards from
 #[allow(clippy::too_many_arguments)]
 pub fn claim(
     owner: &SignerPubkey,
