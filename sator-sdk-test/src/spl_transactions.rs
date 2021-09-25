@@ -40,7 +40,7 @@ pub fn create_token_account(
 
     let mut transaction = Transaction::new_with_payer(&instructions, Some(&payer.pubkey()));
 
-    transaction.sign(&[owner, &token_account, payer], recent_blockhash);
+    transaction.sign(&[&token_account, payer], recent_blockhash);
 
     (transaction, token_account)
 }

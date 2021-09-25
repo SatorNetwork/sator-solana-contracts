@@ -220,8 +220,9 @@ pub fn stake(
 /// Expects that `token_account_user` is same for `stake` and `unstake`
 ///
 /// Accounts:
-///  * `clock`                      - *program, implicit*
+///  * `sysvar_clock`               - *program, implicit* used to check lock maturity
 ///  * `spl_token`                  - *program, implicit*
+///  * `fee_payer`                  - *mutable*, in case of full unlock, will transfers sols from lock onto this account
 ///  * `stake_pool`                 - state account initialized
 ///  * `stake_authority`            - *implicit*, derived from `owner`
 ///  * `token_account_user`         - *mutable* represent user account
@@ -232,6 +233,8 @@ pub fn unstake(
     stake_pool: &Pubkey,
     token_account_user: &TokenAccountPubkey,
     stake_pool_owner: &SignerPubkey,
+    fee_payer: &Pubkey,
+
 ) -> Result<solana_program::instruction::Instruction, ProgramError> {
     let (stake_authority, _) =
         Pubkey::find_program_address_for_pubkey(stake_pool, &stake_viewer_program_id());
@@ -251,6 +254,7 @@ pub fn unstake(
         vec![
             AccountMeta::new_readonly(sysvar::clock::id(), false),
             AccountMeta::new_readonly(spl_token::id(), false),
+            AccountMeta::new(*fee_payer, false),
             AccountMeta::new_readonly(*stake_pool, false),
             AccountMeta::new_readonly(stake_authority, false),
             AccountMeta::new(*token_account_user, false),

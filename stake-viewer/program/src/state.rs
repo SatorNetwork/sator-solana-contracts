@@ -1,8 +1,6 @@
 //! Program owned state
 
 use std::ops::Mul;
-use std::time::Duration;
-
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use sator_sdk::state::StateVersion;
 use sator_sdk::types::{ApproximateSeconds, SignerPubkey, TokenAmount};
@@ -10,7 +8,6 @@ use solana_program::clock::UnixTimestamp;
 use solana_program::pubkey::Pubkey;
 use solana_program::{entrypoint::ProgramResult, program_error::ProgramError};
 
-use crate::errors::Error;
 use crate::types::*;
 
 /// Pool state and rules

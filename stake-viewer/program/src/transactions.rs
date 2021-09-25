@@ -1,23 +1,18 @@
-use borsh::BorshDeserialize;
-use sator_sdk::program::*;
 use sator_sdk::types::*;
 use solana_program::{clock::Clock, system_instruction};
 use solana_program_test::*;
 use solana_sdk::{
-    account::Account,
-    instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
-use std::mem;
 
 use crate::{
     instruction::{InitializeStakePoolInput, StakeInput},
     stake_viewer_program_id, state,
 };
 
-pub fn initialize_stake(
+pub fn initialize_stake_pool(
     fee_payer: &Keypair,
     stake_pool_owner: &Keypair,
     mint: &MintPubkey,
@@ -69,10 +64,10 @@ pub fn unstake(
     recent_blockhash: solana_program::hash::Hash,
 ) -> Transaction {
     let instruction =
-        crate::instruction::unstake(stake_pool, token_account_target, &stake_pool_owner.pubkey())
+        crate::instruction::unstake(stake_pool, token_account_target, &stake_pool_owner.pubkey(), &fee_payer.pubkey())
             .expect("could create derived keys");
     let mut transaction = Transaction::new_with_payer(&[instruction], Some(&fee_payer.pubkey()));
-    transaction.sign(&[stake_pool_owner], recent_blockhash);
+    transaction.sign(&[stake_pool_owner, fee_payer], recent_blockhash);
     transaction
 }
 

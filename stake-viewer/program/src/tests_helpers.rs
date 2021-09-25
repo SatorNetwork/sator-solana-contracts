@@ -1,5 +1,5 @@
 use solana_program::{program_pack::Pack, pubkey::Pubkey};
-use solana_program_test::{BanksClient, ProgramTestContext};
+use solana_program_test::{BanksClient,};
 use solana_sdk::account::Account;
 
 use sator_sdk::program::PubkeyPatterns;

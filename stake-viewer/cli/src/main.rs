@@ -1,4 +1,3 @@
-/// проверить инит пул + стейк с раздельными овнер/пеер + показать мне где ты создаешь минт и подвязываешь под него кошелек что б я сравнил с нашими инструкциями, и вообще нам бы еще небольшой звоночек с Димой Момотом на троих сообразить - остаточно расставить точки над И в плане гет стейк данных (откуда удобней/что хранит у себя что мб через рпс и тд) + я к тому моменту постараюсь проверить работоспособность реворд контрактов и мб вопросы собрать если будут
 use std::io::{Read, Cursor};
 use sator_sdk::program::PubkeyPatterns;
 use sator_stake_viewer::{
@@ -26,14 +25,13 @@ pub struct Options {
 fn main() {
     let config = solana_cli_config::Config::default();
     let mut options: Options = Options::default();
-    options.mint = true;
-    options.all_exists = false;
-
-
+    options.mint = false;
+    options.all_exists = true;
+    let stake_pool_owner =  Keypair::new();
     if options.all_exists {
         let mut fee_payer = "[115, 91, 202, 172, 215, 254, 239, 102, 127, 239, 39, 117, 165, 14, 239, 60, 242, 138, 216, 4, 183, 230, 36, 122, 133, 128, 12, 201, 176, 200, 144, 182, 17, 64, 8, 222, 37, 225, 40, 90, 140, 94, 207, 194, 215, 172, 41, 156, 184, 231, 78, 111, 144, 102, 2, 211, 156, 35, 90, 19, 91, 13, 43, 209]".to_string();
-        let mut cursor = std::io::Cursor::new(fee_payer);
-        let keypair = solana_sdk::signature::read_keypair(&mut cursor).unwrap();        
+        let mut fee_payer = std::io::Cursor::new(fee_payer);
+        let fee_payer = solana_sdk::signature::read_keypair(&mut fee_payer).unwrap();        
         
         let rpc_client = RpcClient::new("https://api.devnet.solana.com".to_string());
         solana_logger::setup_with_default("solana=debug");
@@ -47,8 +45,8 @@ fn main() {
          
         let mut transaction = Transaction::new_with_payer(
             &[sator_stake_viewer::instruction::stake(
-                &keypair.pubkey(),
-                &keypair.pubkey(),
+                &fee_payer.pubkey(),
+                &stake_pool_owner.pubkey(),
                 &stakepool.pubkey(),
                 &userWallett,
                 StakeInput {
@@ -58,12 +56,12 @@ fn main() {
             )
             .unwrap()
             .0],
-            Some(&keypair.pubkey()),
+            Some(&fee_payer.pubkey(),),
         );
 
         let (recent_blockhash, fee_calculator) = rpc_client.get_recent_blockhash().unwrap();
 
-        let signers = vec![&keypair];
+        let signers = vec![&fee_payer, &stake_pool_owner];
         transaction.sign(&signers, recent_blockhash);
 
         let signature = rpc_client
@@ -95,7 +93,7 @@ fn main() {
                 let transaction = sator_sdk_test::spl_transactions::create_initialize_mint(
                     &fee_payer,
                     &mint,
-                    &fee_payer.pubkey(),
+                    &stake_pool_owner.pubkey(),
                     100000000,
                     2,
                     rpc_client.get_recent_blockhash().unwrap().0,
@@ -107,12 +105,11 @@ fn main() {
                     )
                     .unwrap();
 
-                println!("mint trx :{:?}", signature);
-
+                dbg!("mint trx :{:?}", signature);
                 let (transaction, pubkey) = sator_sdk_test::spl_transactions::create_token_account(
                     1000000000,
                     &mint.pubkey(),
-                    &fee_payer,
+                    &stake_pool_owner,
                     &fee_payer,
                     rpc_client.get_recent_blockhash().unwrap().0,
                 );
@@ -134,7 +131,7 @@ fn main() {
                     &fee_payer,
                     &mint.pubkey(),
                     &pubkey,
-                    &fee_payer,
+                    &stake_pool_owner,
                     10000000,
                     rpc_client.get_recent_blockhash().unwrap().0,
                 );
@@ -158,7 +155,7 @@ fn main() {
         let mut transaction = Transaction::new_with_payer(
             &[sator_stake_viewer::instruction::initialize_stake_pool(
                 &fee_payer.pubkey(),
-                &fee_payer.pubkey(),
+                &stake_pool_owner.pubkey(),
                 &stake.pubkey(),
                 &mint.parse().unwrap(),
                 InitializeStakePoolInput {
@@ -188,7 +185,7 @@ fn main() {
 
         let (recent_blockhash, fee_calculator) = rpc_client.get_recent_blockhash().unwrap();
 
-        let signers = vec![&fee_payer, &stake];
+        let signers = vec![&fee_payer, &stake, &stake_pool_owner];
         transaction.sign(&signers, recent_blockhash);
 
         let signature = rpc_client
@@ -204,7 +201,7 @@ fn main() {
             let mut transaction = Transaction::new_with_payer(
                 &[sator_stake_viewer::instruction::stake(
                     &fee_payer.pubkey(),
-                    &fee_payer.pubkey(),
+                    &stake_pool_owner.pubkey(),
                     &stake.pubkey(),
                     &token,
                     StakeInput {
@@ -219,7 +216,7 @@ fn main() {
 
             let (recent_blockhash, fee_calculator) = rpc_client.get_recent_blockhash().unwrap();
 
-            let signers = vec![&fee_payer];
+            let signers = vec![&fee_payer, &stake_pool_owner];
             transaction.sign(&signers, recent_blockhash);
 
             let signature = rpc_client

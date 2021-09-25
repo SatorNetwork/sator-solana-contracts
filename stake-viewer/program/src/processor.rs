@@ -77,11 +77,12 @@ pub fn process_instruction(
         Instruction::Unstake => {
             msg!("Instruction::Unstake");
             match accounts {
-                [clock, spl_token, stake_pool, stake_authority, token_account_user, token_account_stake_source, stake_account, stake_pool_owner, ..] => {
+                [clock, spl_token, fee_payer, stake_pool, stake_authority, token_account_user, token_account_stake_source, stake_account, stake_pool_owner, ..] => {
                     unstake(
                         program_id,
                         clock,
                         spl_token,
+                        fee_payer,
                         stake_pool,
                         stake_authority,
                         token_account_user,
@@ -133,7 +134,7 @@ fn initialize_stake<'a>(
     let lamports = rent_state.minimum_balance(spl_token::state::Account::LEN);
     invoke::create_account_with_seed_signed(
         system_program,
-        &stake_pool_owner,
+        &fee_payer,
         &token_account,
         stake_authority,
         "ViewerStakePool::token_account",
@@ -177,7 +178,7 @@ fn derive_token_account(
     Ok((stake_authority_pubkey, bump_seed, derived))
 }
 
-fn stake<'a>(
+pub fn stake<'a>(
     program_id: &ProgramPubkey,
     system_program: &AccountInfo<'a>,
     rent: &AccountInfo<'a>,
@@ -295,8 +296,9 @@ fn stake<'a>(
 
 fn unstake<'a>(
     program_id: &ProgramPubkey,
-    clock: &AccountInfo<'a>,
+    sysvar_clock: &AccountInfo<'a>,
     spl_token: &AccountInfo<'a>,
+    fee_payer: &AccountInfo<'a>,
     stake_pool: &AccountInfo<'a>,
     stake_authority: &AccountInfo<'a>,
     token_account_user: &AccountInfo<'a>,
@@ -330,7 +332,7 @@ fn unstake<'a>(
 
     is_derived(user_stake_account_state.owner, token_account_user)?;
 
-    let clock = Clock::from_account_info(clock)?;
+    let clock = Clock::from_account_info(sysvar_clock)?;
     if user_stake_account_state.staked_until > clock.unix_timestamp {
         return errors::Error::UnstakeCanBeDoneOnlyAfterStakeTimeLapsed.into();
     }
@@ -358,7 +360,7 @@ fn unstake<'a>(
         &authority_signature,
     )?;
 
-    burn_account(user_stake_account, stake_pool_owner);
+    burn_account(user_stake_account, fee_payer);
 
     Ok(())
 }
