@@ -87,6 +87,13 @@ fn main() {
 
         let mut token_account = None;
         let mint = {
+            // this is case when we create all accounts
+            // 1. create system account
+            // 2. initialize it as mint
+            // 3. create system account
+            // 4. initialize it as token account
+            // 5. mint tokens onto token account
+            // NOTE: in decentralized solution governance(or wormhole) will decide to mint(or freeze mint) and no single enitity will be able to mint, only transfers
             if options.mint {
                 let mint = Keypair::new();
                 println!("mint pk: {:?}", mint.to_bytes());
@@ -138,7 +145,7 @@ fn main() {
                 let signature = rpc_client
                     .send_and_confirm_transaction_with_spinner_and_commitment(
                         &transaction,
-                        CommitmentConfig::confirmed(),
+                        CommitmentConfig::confirmed(),mint 
                     )
                     .unwrap();
 
