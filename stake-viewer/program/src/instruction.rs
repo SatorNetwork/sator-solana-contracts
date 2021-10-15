@@ -164,9 +164,9 @@ mod tests {
 ///  * `stake_pool`                    - account of stake pool used
 ///  * `stake_pool_owner`              - *signer* owner of stake pool
 ///  * `stake_authority`               - *derived*  as in [Instruction::InitializeStake]
-///  * `token_account_user`            - *mutable* represents user and has approval for input amount
+///  * `token_account_source`          - *mutable* represents user and has approval for input amount
 ///  * `token_account_stake_target`    - *derived, mutable, implicit*
-///  * `user_stake_account`            - *implicit, derived, mutable* from `wallet` and `stake_authority`
+///  * `user_stake_account`            - *implicit, derived, mutable* from `token_account_user` and `stake_authority`
 ///
 /// Notes:
 /// - current design does not creates token account to stake tokens, just counts amount in stake.

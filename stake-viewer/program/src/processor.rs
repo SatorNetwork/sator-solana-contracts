@@ -53,7 +53,7 @@ pub fn process_instruction(
         Instruction::Stake(input) => {
             msg!("Instruction::Stake");
             match accounts {
-                [system_program, rent, clock, spl_token, fee_payer, stake_pool, stake_pool_owner, stake_authority, token_account_user, token_account_stake_target, user_stake_account, ..] => {
+                [system_program, rent, clock, spl_token, fee_payer, stake_pool, stake_pool_owner, stake_authority, token_account_source, token_account_stake_target, user_stake_account, ..] => {
                     stake(
                         program_id,
                         system_program,
@@ -64,7 +64,7 @@ pub fn process_instruction(
                         stake_pool,
                         stake_pool_owner,
                         stake_authority,
-                        token_account_user,
+                        token_account_source,
                         token_account_stake_target,
                         user_stake_account,
                         input,
