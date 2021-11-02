@@ -287,6 +287,7 @@ async fn flow() {
         get_token_account_state(&mut client.banks_client, &user_token_account.pubkey()).await;
     let unstaked = user_token_account_state_after.amount - user_token_account_state_before.amount;
     assert_eq!(unstaked, 3000);
+
     client
         .banks_client
         .get_account_data_with_borsh::<ViewerStake>(stake_account.pubkey())

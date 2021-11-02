@@ -1,10 +1,11 @@
 {
     "cSpell.words": [
-        "Borsh",
-        "Pubkey",
         "blockhash",
+        "Borsh",
         "lamports",
+        "Pubkey",
         "unstake",
+        "unstaked",
         "unstaking"
     ],
     "_rust-analyzer.cargo.target": "bpfel-unknown-unknown",
