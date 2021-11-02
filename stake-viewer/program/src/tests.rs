@@ -225,7 +225,7 @@ async fn flow() {
         &stake_pool_owner,
         client.last_blockhash,
     );
-    
+
     client
         .banks_client
         .process_transaction(transaction)
@@ -266,6 +266,9 @@ async fn flow() {
     warp_seconds(&mut client, 5 * hour).await;
 
     dbg!("Unstaking from lock with success");
+    let user_token_account_state_before =
+        get_token_account_state(&mut client.banks_client, &user_token_account.pubkey()).await;
+
     let transaction = transactions::unstake(
         &fee_payer,
         &stake_pool.pubkey(),
@@ -280,6 +283,10 @@ async fn flow() {
         .await
         .unwrap();
 
+    let user_token_account_state_after =
+        get_token_account_state(&mut client.banks_client, &user_token_account.pubkey()).await;
+    let unstaked = user_token_account_state_after.amount - user_token_account_state_before.amount;
+    assert_eq!(unstaked, 3000);
     client
         .banks_client
         .get_account_data_with_borsh::<ViewerStake>(stake_account.pubkey())

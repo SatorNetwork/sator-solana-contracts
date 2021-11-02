@@ -53,11 +53,15 @@ pub fn process_instruction(
         Instruction::Stake(input) => {
             msg!("Instruction::Stake");
             match accounts {
-                [system_program, rent, clock, spl_token, fee_payer, stake_pool, stake_pool_owner, stake_authority, token_account_source, token_account_stake_target, user_stake_account, ..] => {
+                [system_program, sysvar_rent,
+                clock, spl_token,
+                 fee_payer, stake_pool, stake_pool_owner,
+                stake_authority,
+                token_account_source, token_account_stake_target, user_stake_account, ..] => {
                     stake(
                         program_id,
                         system_program,
-                        rent,
+                        sysvar_rent,
                         clock,
                         spl_token,
                         fee_payer,
@@ -181,7 +185,7 @@ fn derive_token_account(
 pub fn stake<'a>(
     program_id: &ProgramPubkey,
     system_program: &AccountInfo<'a>,
-    rent: &AccountInfo<'a>,
+    sysvar_rent: &AccountInfo<'a>,
     clock: &AccountInfo<'a>,
     spl_token: &AccountInfo<'a>,
     fee_payer: &AccountInfo<'a>,
@@ -190,7 +194,7 @@ pub fn stake<'a>(
     stake_authority: &AccountInfo<'a>,
     token_account_source: &AccountInfo<'a>,
     token_account_stake_target: &AccountInfo<'a>,
-    stake_user_account: &AccountInfo<'a>,
+    user_stake_account: &AccountInfo<'a>,
     input: crate::instruction::StakeInput,
 ) -> ProgramResult {
     ensure_eq!(
@@ -232,12 +236,13 @@ pub fn stake<'a>(
     );
     ensure_derived!(
         stake_account_pubkey,
-        stake_user_account,
+        user_stake_account,
         errors::Error::StakeUserMustBeDerivedFromUserToken
     );
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
-    let stake_user_account_state = if stake_user_account.data_is_empty() {
+    let stake_user_account_state = if user_stake_account.data_is_empty() {
+        // new stake
         let stake_user_account_state = ViewerStake {
             amount: input.amount,
             owner: token_account_source.pubkey(),
@@ -245,12 +250,12 @@ pub fn stake<'a>(
             version: StateVersion::V1,
             staked_at: clock.unix_timestamp,
         };
-        let rent_state = Rent::from_account_info(rent)?;
+        let rent_state = Rent::from_account_info(sysvar_rent)?;
         let lamports = rent_state.minimum_balance(ViewerStake::LEN);
         invoke::create_account_with_seed_signed(
             system_program,
             &fee_payer,
-            &stake_user_account,
+            &user_stake_account,
             stake_authority,
             &seed[..],
             lamports,
@@ -262,10 +267,10 @@ pub fn stake<'a>(
     } else {
         ensure_eq!(
             program_id,
-            stake_user_account.owner,
+            user_stake_account.owner,
             errors::Error::StakeUserAccountMustBeOwnedByThisContract
         );
-        let mut stake_user_account_state = stake_user_account.deserialize::<ViewerStake>()?;
+        let mut stake_user_account_state = user_stake_account.deserialize::<ViewerStake>()?;
         stake_user_account_state.initialized()?;
 
         if input.duration < stake_user_account_state.duration() {
@@ -278,11 +283,13 @@ pub fn stake<'a>(
             errors::Error::UserTokenAccountMustBeOwnerOfStakeUserAccount
         );
         stake_user_account_state.staked_until = clock.unix_timestamp + input.duration;
+        // existing stake just adds on top
         stake_user_account_state.amount += input.amount;
         stake_user_account_state.staked_at = clock.unix_timestamp;
         stake_user_account_state
     };
 
+    // transfer amount from provided user token account into stake pool
     invoke::spl_token_transfer(
         spl_token,
         token_account_source,
@@ -290,7 +297,7 @@ pub fn stake<'a>(
         stake_pool_owner,
         input.amount,
     )?;
-    stake_user_account_state.serialize_const(&mut *stake_user_account.try_borrow_mut_data()?)?;
+    stake_user_account_state.serialize_const(&mut *user_stake_account.try_borrow_mut_data()?)?;
     Ok(())
 }
 
@@ -351,6 +358,7 @@ fn unstake<'a>(
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
 
+    // transfer previously staked amount to user token account
     invoke::spl_token_transfer_signed(
         spl_token,
         token_account_stake_source,
