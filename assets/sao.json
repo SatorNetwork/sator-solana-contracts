@@ -3,10 +3,14 @@
     "symbol": "SAO",
     "description": "Utility token of Sator meta-verse",
     "seller_fee_basis_points": 0,
-    "image": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/2HeykdKjzHKGm2LKHw8pDYwjKPiFEoXAz74dirhUgQvq/Sator_Logo.png",
+    "image": "https://raw.githubusercontent.com/SatorNetwork/sator-solana-contracts/main/assets/sator-unicorn-1024.jpg",
     "animation_url": "https://raw.githubusercontent.com/SatorNetwork/sator-solana-contracts/main/assets/sator-unicorn-1024.gif",
     "external_url": "https://sator.io",
     "attributes": [
+        {
+            "trait_type": "website",
+            "value": "https://sator.io"
+        },
         {
             "trait_type": "web",
             "value": "yes"
@@ -21,7 +25,7 @@
         }
     ],
     "collection": {
-        "name": "Sator tokens",
+        "name": "Sator SAO Tokens",
         "family": "Sator"
     },
     "properties": {
