@@ -8,14 +8,14 @@ clap = { version = "3.0.0-beta.2" }
 solana-client-helpers = "1.0"
 
 serde_json = "1.0.61"
-solana-account-decoder = "1.7.6"
-solana-clap-utils = "1.7.6"
-solana-cli-config = "1.7.6"
-solana-client = "1.7.6"
-solana-logger = "1.7.6"
-solana-sdk = "1.7.6"
-solana-program = "1.7.6"
-spl-token = { git = "https://github.com/solana-labs/solana-program-library.git", features = [ "no-entrypoint" ], rev = "bcbed37faba7f5a67303027d1cd765b52e96ff8e" }
+solana-account-decoder = "1.8.5"
+solana-clap-utils = "1.8.5"
+solana-cli-config = "1.8.5"
+solana-client = "1.8.5"
+solana-logger = "1.8.5"
+solana-sdk = "1.8.5"
+solana-program = "1.8.5"
+spl-token = { version="3.1.1", features = [ "no-entrypoint" ] }
 sator-stake-viewer = { path="../program", features = [ "no-entrypoint" ] }
 sator-sdk = { path="../../sator-sdk",  features = [ "no-entrypoint" ]  }
 sator-sdk-test = { path="../../sator-sdk-test"  }

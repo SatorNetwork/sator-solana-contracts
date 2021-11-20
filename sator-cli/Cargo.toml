@@ -1,5 +1,5 @@
 [package]
-name = "sator-reward-cli"
+name = "sator-cli"
 version = "0.1.0"
 edition = "2018"
 
@@ -15,5 +15,5 @@ solana-client = "1.8.5"
 solana-logger = "1.8.5"
 solana-sdk = "1.8.5"
 solana-program = "1.8.5"
-sator-reward = { path="../program", features = [ "no-entrypoint" ] }
-
+spl-token = { version="3.1.1", features = [ "no-entrypoint" ] }
+metaplex-token-metadata = {version = "0.0.1", features = [ "no-entrypoint" ] }

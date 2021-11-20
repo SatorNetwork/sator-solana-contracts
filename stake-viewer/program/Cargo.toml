@@ -13,8 +13,8 @@ no-entrypoint = []
 borsh = "0.9.1"
 borsh-derive = "0.9.1"
 bs58 = "*"
-solana-program = "=1.7.8"
-spl-token = { git = "https://github.com/solana-labs/solana-program-library.git", features = [ "no-entrypoint" ], rev = "bcbed37faba7f5a67303027d1cd765b52e96ff8e" }
+solana-program = "1.8.5"
+spl-token = { version="3.1.1", features = [ "no-entrypoint" ] }
 thiserror = "1.0"
 num-traits = "0.2"
 num-derive = "0.3"
@@ -23,10 +23,10 @@ fixed = "1.9.0"
 sator-sdk = { path="../../sator-sdk",  features = [ "no-entrypoint" ]  }
 
 [dev-dependencies]
-solana-program-test = "=1.7.8"
-solana-sdk = "=1.7.8"
+solana-program-test = "1.8.5"
+solana-sdk = "1.8.5"
 assert_matches = "1.4.0"
-solana-validator = "1.7.6"
+solana-validator = "1.8.5"
 bincode = "*"
 sator-sdk-test = { path="../../sator-sdk-test"  }
 hex = "*"

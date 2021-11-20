@@ -6,4 +6,5 @@ members = [
     "sator-reward/cli",
     "sator-reward/program",
     "sator-sdk-test",
+    "sator-cli",
  ]
