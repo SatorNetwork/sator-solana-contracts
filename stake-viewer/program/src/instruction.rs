@@ -164,9 +164,9 @@ mod tests {
 ///  * `stake_pool`                    - account of stake pool used
 ///  * `stake_pool_owner`              - *signer* owner of stake pool
 ///  * `stake_authority`               - *derived*  as in [Instruction::InitializeStake]
-///  * `token_account_user`            - *mutable* represents user and has approval for input amount
+///  * `token_account_source`          - *mutable* represents user and has approval for input amount
 ///  * `token_account_stake_target`    - *derived, mutable, implicit*
-///  * `user_stake_account`            - *implicit, derived, mutable* from `wallet` and `stake_authority`
+///  * `user_stake_account`            - *implicit, derived, mutable* from `token_account_user` and `stake_authority`
 ///
 /// Notes:
 /// - current design does not creates token account to stake tokens, just counts amount in stake.
@@ -176,7 +176,7 @@ pub fn stake(
     fee_payer: &SignerPubkey,
     stake_pool_owner: &SignerPubkey,
     stake_pool: &Pubkey,
-    token_account_user: &TokenAccountPubkey,
+    token_account_source: &TokenAccountPubkey,
     input: StakeInput,
 ) -> Result<(solana_program::instruction::Instruction, Pubkey), ProgramError> {
     let (stake_authority, _) =
@@ -189,7 +189,7 @@ pub fn stake(
 
     let user_stake_account = Pubkey::create_with_seed_for_pubkey(
         &stake_authority,
-        token_account_user,
+        token_account_source,
         &stake_viewer_program_id(),
     )?;
     Ok((
@@ -205,7 +205,7 @@ pub fn stake(
                 AccountMeta::new_readonly(*stake_pool, false),
                 AccountMeta::new_readonly(*stake_pool_owner, true),
                 AccountMeta::new_readonly(stake_authority, false),
-                AccountMeta::new(*token_account_user, false),
+                AccountMeta::new(*token_account_source, false),
                 AccountMeta::new(token_account_stake_target, false),
                 AccountMeta::new(user_stake_account.0, false),
             ],

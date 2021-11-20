@@ -1,0 +1,42 @@
+{
+    "name": "Sator",
+    "symbol": "SAO",
+    "description": "Unitility token of Sator meta-verse",
+    "seller_fee_basis_points": 0,
+    "image": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/2HeykdKjzHKGm2LKHw8pDYwjKPiFEoXAz74dirhUgQvq/Sator_Logo.png",
+    "animation_url": "https://www.arweave.net/efgh1234?ext=mp4",
+    "external_url": "https://sator.io",
+    "attributes": [
+        {
+            "trait_type": "web",
+            "value": "yes"
+        },
+        {
+            "trait_type": "mobile",
+            "value": "yes"
+        },
+        {
+            "trait_type": "extension",
+            "value": "yes"
+        }
+    ],
+    "collection": {
+        "name": "Sator tokens",
+        "family": "Sator"
+    },
+    "properties": {
+        "files": [
+            {
+                "uri": "https://www.arweave.net/abcd5678?ext=png",
+                "type": "image/gif"
+            }
+        ],
+        "category": "token",
+        "creators": [
+            {
+                "address": "3fStvMDNKbG1FRu8reeMrz6V53fdtQFMs84enMGQVNXV",
+                "share": 100
+            }
+        ]
+    }
+}

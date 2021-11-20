@@ -203,7 +203,7 @@ async fn flow() {
         &show_owner,
         &show.pubkey(),
         &user_wallet.pubkey(),
-        &user_token_account,
+        &user_token_account.pubkey(),
         vec![quiz_pubkey],
         client.last_blockhash,
     );
@@ -214,6 +214,6 @@ async fn flow() {
         .await
         .unwrap();
 
-    let account = get_token_account_state(&mut client.banks_client, &user_token_account).await;
+    let account = get_token_account_state(&mut client.banks_client, &user_token_account.pubkey()).await;
     assert_eq!(account.amount, 666);
 }
