@@ -31,8 +31,8 @@ fn main() {
     if options.all_exists {
         let mut fee_payer = "[115, 91, 202, 172, 215, 254, 239, 102, 127, 239, 39, 117, 165, 14, 239, 60, 242, 138, 216, 4, 183, 230, 36, 122, 133, 128, 12, 201, 176, 200, 144, 182, 17, 64, 8, 222, 37, 225, 40, 90, 140, 94, 207, 194, 215, 172, 41, 156, 184, 231, 78, 111, 144, 102, 2, 211, 156, 35, 90, 19, 91, 13, 43, 209]".to_string();
         let mut fee_payer = std::io::Cursor::new(fee_payer);
-        let fee_payer = solana_sdk::signature::read_keypair(&mut fee_payer).unwrap();        
-        
+        let fee_payer = solana_sdk::signature::read_keypair(&mut fee_payer).unwrap();
+
         let rpc_client = RpcClient::new("https://api.devnet.solana.com".to_string());
         solana_logger::setup_with_default("solana=debug");
 
@@ -41,8 +41,8 @@ fn main() {
         let stakeAuth: Pubkey = "7jq2SaaZEsCgaxYmmjiZqXJtdxwRNoRaWFLSTZPX2e5L".parse().unwrap();
         let userWallett: Pubkey = "3juXiCWJwusUqDgN9T5oVjic5h4CmbueyHZ7B1oBWZEX".parse().unwrap();
         let tokenAccountStakeTargett: Pubkey = "9sKWcvyXfuubEwgxnNGHUzsndCpoPRJzGL1KavPU29Vq".parse().unwrap();
-        let stakeAccountt: Pubkey = "7jq2SaaZEsCgaxYmmjiZqXJtdxwRNoRaWFLSTZPX2e5L".parse().unwrap();       
-         
+        let stakeAccountt: Pubkey = "7jq2SaaZEsCgaxYmmjiZqXJtdxwRNoRaWFLSTZPX2e5L".parse().unwrap();
+
         let mut transaction = Transaction::new_with_payer(
             &[sator_stake_viewer::instruction::stake(
                 &fee_payer.pubkey(),
@@ -77,7 +77,7 @@ fn main() {
         let fee_payer =
             solana_sdk::signature::read_keypair_file("/home/dz/validator-keypair.json".to_string())
                 .unwrap();
-        println!("fee payer pk: {:?}", fee_payer.to_bytes());                
+        println!("fee payer pk: {:?}", fee_payer.to_bytes());
         let rpc_client = RpcClient::new("https://api.devnet.solana.com".to_string());
         solana_logger::setup_with_default("solana=debug");
 
@@ -145,12 +145,12 @@ fn main() {
                 let signature = rpc_client
                     .send_and_confirm_transaction_with_spinner_and_commitment(
                         &transaction,
-                        CommitmentConfig::confirmed(),mint 
+                        CommitmentConfig::confirmed(),
                     )
                     .unwrap();
 
-                println!("minted to trx: {:?}", signature);                    
-                
+                println!("minted to trx: {:?}", signature);
+
                 mint.pubkey().to_string()
             } else {
                 "13kBuVtxUT7CeddDgHfe61x3YdpBWTCKeB2Zg2LC4dab".to_string()
