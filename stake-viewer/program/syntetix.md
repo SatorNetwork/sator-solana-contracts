@@ -31,6 +31,8 @@ rewarded[sender] = reward_per_token
 
 User can continuously claim and withdraw balance and reward.
 
+User can claim reward for period immediately, but adding and removing will not increase hist reward for period.
+
 ## Withdraw
 
 ```julia
