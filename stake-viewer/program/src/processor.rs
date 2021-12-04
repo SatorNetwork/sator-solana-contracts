@@ -194,7 +194,7 @@ pub fn stake<'a>(
     stake_authority: &AccountInfo<'a>,
     token_account_source: &AccountInfo<'a>,
     token_account_stake_target: &AccountInfo<'a>,
-    user_stake_account: &AccountInfo<'a>,
+    viewer_stake_account: &AccountInfo<'a>,
     input: crate::instruction::StakeInput,
 ) -> ProgramResult {
     ensure_eq!(
@@ -218,7 +218,7 @@ pub fn stake<'a>(
     let (stake_authority_pubkey, bump_seed, token_account_pubkey) =
         derive_token_account(stake_pool, program_id)?;
 
-    let (stake_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
+    let (viewer_stake_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
         &token_account_source.pubkey(),
         program_id,
@@ -235,13 +235,13 @@ pub fn stake<'a>(
         errors::Error::StakeTokenAccountMustBeDerivedFromStake
     );
     ensure_derived!(
-        stake_account_pubkey,
-        user_stake_account,
+        viewer_stake_account_pubkey,
+        viewer_stake_account,
         errors::Error::StakeUserMustBeDerivedFromUserToken
     );
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
-    let stake_user_account_state = if user_stake_account.data_is_empty() {
+    let stake_user_account_state = if viewer_stake_account.data_is_empty() {
         // new stake
         let stake_user_account_state = ViewerStake {
             amount: input.amount,
@@ -255,7 +255,7 @@ pub fn stake<'a>(
         invoke::create_account_with_seed_signed(
             system_program,
             &fee_payer,
-            &user_stake_account,
+            &viewer_stake_account,
             stake_authority,
             &seed[..],
             lamports,
@@ -267,10 +267,10 @@ pub fn stake<'a>(
     } else {
         ensure_eq!(
             program_id,
-            user_stake_account.owner,
+            viewer_stake_account.owner,
             errors::Error::StakeUserAccountMustBeOwnedByThisContract
         );
-        let mut stake_user_account_state = user_stake_account.deserialize::<ViewerStake>()?;
+        let mut stake_user_account_state = viewer_stake_account.deserialize::<ViewerStake>()?;
         stake_user_account_state.initialized()?;
 
         if input.duration < stake_user_account_state.duration() {
@@ -297,7 +297,7 @@ pub fn stake<'a>(
         stake_pool_owner,
         input.amount,
     )?;
-    stake_user_account_state.serialize_const(&mut *user_stake_account.try_borrow_mut_data()?)?;
+    stake_user_account_state.serialize_const(&mut *viewer_stake_account.try_borrow_mut_data()?)?;
     Ok(())
 }
 

@@ -1,0 +1,1 @@
+// exampled of using stake viewer from web
