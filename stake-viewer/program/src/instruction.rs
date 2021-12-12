@@ -88,7 +88,7 @@ pub fn initialize_stake_pool(
 ///  * `spl_token`                     - *program, implicit*
 ///  * `fee_payer`                     - *signer, payer* pays for account creation
 ///  * `stake_pool`                    - account of stake pool used
-///  * `stake_authority`               - *derived*  as in [Instruction::InitializeStake]
+///  * `stake_authority`               - *derived*  as in [Instruction::InitializeStakePool]
 ///  * `token_account_source`          - *mutable* represents user and has approval for input amount
 ///  * `token_account_stake_target`    - *derived, mutable, implicit*
 ///  * `viewer_stake_account`          - *implicit, derived, mutable* from `user_wallet` and `stake_authority`
