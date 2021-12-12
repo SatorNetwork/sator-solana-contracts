@@ -63,9 +63,13 @@ pub fn unstake(
     stake_pool_owner: &Keypair,
     recent_blockhash: solana_program::hash::Hash,
 ) -> Transaction {
-    let instruction =
-        crate::instruction::unstake(stake_pool, token_account_target, &stake_pool_owner.pubkey(), &fee_payer.pubkey())
-            .expect("could create derived keys");
+    let instruction = crate::instruction::unstake(
+        stake_pool,
+        token_account_target,
+        &stake_pool_owner.pubkey(),
+        &fee_payer.pubkey(),
+    )
+    .expect("could create derived keys");
     let mut transaction = Transaction::new_with_payer(&[instruction], Some(&fee_payer.pubkey()));
     transaction.sign(&[stake_pool_owner, fee_payer], recent_blockhash);
     transaction

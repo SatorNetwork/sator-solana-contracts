@@ -16,6 +16,7 @@ pub enum Error {
     UserTokenAccountMustBeOwnerOfStakeUserAccount,
     StakePoolMustBeOwnedByThisContract,
     StakeUserAccountMustBeOwnedByThisContract,
+    StakeForViewerMustBeSignedByUserWalletOrPoolAdmin,
 }
 
 impl Error {

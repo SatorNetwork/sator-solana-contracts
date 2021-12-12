@@ -11,7 +11,7 @@
 //! - Staked amount can be less than minimal rank requirement.
 //! - `owner` must top up stake `StakePool.token_account` to allow non zero `reward_multiplier`s.
 //! - Adding amount resets the timer to zero. Non resetting option is possible, but need to be discussed if need to be implemented now..
-//! - Allowing rewards depending on count of passed quizes is possible, but should be discussed if should be implemented now.
+//! - Allowing rewards depending on count of passed quizzes is possible, but should be discussed if should be implemented now.
 //! - Anybody can stake for Viewer if it does not resets its stake rank. Only Viewer can add to stake if it resets stake rank.
 //! - `Claim` can be done by `Viewer` signature to any address or via permissionless call to `associated token account` for SAO mint on `Viewer` wallet (`ViewerStake.owner`).
 //! - `TypeScript` sdk to call on chain program is coded with example to call each instruction.
@@ -20,7 +20,7 @@
 //! - `stake_pool`'s `token_account` is derived from and owned by `stake_authority`
 //! - `stake_viewer_account` for each user is derived from wallet and pool
 //!
-//!```rust
+//!```rust, ignore
 //! let stake_pool = Pubkey::new_unique();
 //! let (stake_authority, _) = Pubkey::find_program_address(&[&stake_pool.to_bytes()[..32]], &stake_viewer_program_id());
 //! let token_account_stake_pool_target = Pubkey::create_with_seed(
@@ -30,7 +30,7 @@
 //! );
 //! // Pubkey.to_string is longer than 32 chars limit in Solana for seed
 //! // ETH compatible something
-//! let seed = user_token_account.to_bytes();
+//! let seed = user_wallet.to_bytes();
 //! let seed = bs58::encode(&seed[..20]).into_string();
 //! let viewer_stake_account = Pubkey::create_with_seed(stake_authority, &seed, &stake_viewer_program_id());
 //!```
@@ -38,7 +38,7 @@
 pub mod entrypoint;
 pub mod errors;
 pub mod instruction;
-mod processor;
+pub mod processor;
 pub mod state;
 #[cfg(all(feature = "test-bpf", test))]
 mod tests;

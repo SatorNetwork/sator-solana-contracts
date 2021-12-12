@@ -1,27 +1,22 @@
-use std::borrow::Borrow;
-use std::error::Error;
-
+use sator_sdk::{borsh::*, ensure};
 use sator_sdk::invoke::{self, ProgramPubkeySignature};
 use sator_sdk::state::StateVersion;
 use sator_sdk::types::*;
-use sator_sdk::{borsh::*, is_owner};
 use sator_sdk::{ensure_derived, ensure_eq, ensure_owner, program::*};
 use solana_program::clock::Clock;
 use solana_program::msg;
-use solana_program::program_error::{PrintProgramError, ProgramError};
+use solana_program::program_error::ProgramError;
 use solana_program::program_pack::Pack;
 use solana_program::rent::Rent;
 use solana_program::sysvar::Sysvar;
-use solana_program::{
-    account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, pubkey::Pubkey,
-};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 
 use crate::errors;
 use crate::instruction::Instruction;
 use crate::state::{ViewerStake, ViewerStakePool};
-use borsh::BorshSerialize;
 
 // Program entrypoint's implementation
+#[allow(dead_code)]
 pub fn process_instruction(
     program_id: &ProgramPubkey,
     accounts: &[AccountInfo],
@@ -30,10 +25,10 @@ pub fn process_instruction(
     let instruction = Instruction::deserialize_const(instruction_data)?;
     match instruction {
         Instruction::InitializeStakePool(input) => {
-            msg!("Instruction::InitializeStake");
+            msg!("Instruction::InitializeStakePool");
             match accounts {
                 [system_program, sysvar_rent, spl_token, fee_payer, stake_pool_owner, stake_pool, stake_authority, token_account, mint, ..] => {
-                    initialize_stake(
+                    initialize_stake_pool(
                         program_id,
                         system_program,
                         sysvar_rent,
@@ -53,11 +48,21 @@ pub fn process_instruction(
         Instruction::Stake(input) => {
             msg!("Instruction::Stake");
             match accounts {
-                [system_program, sysvar_rent,
-                clock, spl_token,
-                 fee_payer, stake_pool, stake_pool_owner,
-                stake_authority,
-                token_account_source, token_account_stake_target, user_stake_account, ..] => {
+                [
+                    system_program,
+                    sysvar_rent,
+                    clock,
+                    spl_token,
+                    fee_payer,
+                    stake_pool,
+                    stake_authority,
+                    token_account_source,
+                    token_account_stake_target,
+                    viewer_stake_account,
+                    user_wallet,
+                    ..
+                ] => {
+                    let stake_pool_owner = accounts.get(11);
                     stake(
                         program_id,
                         system_program,
@@ -66,11 +71,12 @@ pub fn process_instruction(
                         spl_token,
                         fee_payer,
                         stake_pool,
-                        stake_pool_owner,
                         stake_authority,
                         token_account_source,
                         token_account_stake_target,
-                        user_stake_account,
+                        viewer_stake_account,
+                        user_wallet,
+                        stake_pool_owner,                    
                         input,
                     )
                 }
@@ -101,7 +107,7 @@ pub fn process_instruction(
     }
 }
 
-fn initialize_stake<'a>(
+fn initialize_stake_pool<'a>(
     program_id: &ProgramPubkey,
     system_program: &AccountInfo<'a>,
     rent: &AccountInfo<'a>,
@@ -131,6 +137,7 @@ fn initialize_stake<'a>(
         ViewerStakePool::LEN as u64,
         program_id,
         system_program,
+        spl_token,
     )?;
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
@@ -190,11 +197,12 @@ pub fn stake<'a>(
     spl_token: &AccountInfo<'a>,
     fee_payer: &AccountInfo<'a>,
     stake_pool: &AccountInfo<'a>,
-    stake_pool_owner: &AccountInfo<'a>,
     stake_authority: &AccountInfo<'a>,
     token_account_source: &AccountInfo<'a>,
     token_account_stake_target: &AccountInfo<'a>,
     viewer_stake_account: &AccountInfo<'a>,
+    user_wallet: &AccountInfo<'a>,
+    stake_pool_owner: Option<&AccountInfo<'a>>,
     input: crate::instruction::StakeInput,
 ) -> ProgramResult {
     ensure_eq!(
@@ -204,12 +212,23 @@ pub fn stake<'a>(
     );
     let stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     stake_pool_state.initialized()?;
+    if let Some(stake_pool_owner) = stake_pool_owner {
+        ensure_owner!(
+            stake_pool_owner,
+            stake_pool_state,
+            errors::Error::StakePoolOwnerMustOwnStake
+        );    
+        stake_pool_owner.is_signer()?;
+    } else {
+        user_wallet.is_signer()?;
+    }
 
-    ensure_owner!(
-        stake_pool_owner,
-        stake_pool_state,
-        errors::Error::StakePoolOwnerMustOwnStake
+    let can_restake = user_wallet.is_signer().is_ok();
+    ensure!(
+        can_restake || stake_pool_owner.map_or(false, |x| x.is_signer().is_ok()),
+        errors::Error::StakeForViewerMustBeSignedByUserWalletOrPoolAdmin
     );
+    
     let clock = Clock::from_account_info(clock)?;
     if input.duration < stake_pool_state.ranks[0].minimal_staking_time {
         return errors::Error::StakeStakingTimeMustBeMoreThanMinimal.into();
@@ -220,7 +239,7 @@ pub fn stake<'a>(
 
     let (viewer_stake_account_pubkey, seed) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
-        &token_account_source.pubkey(),
+        &user_wallet.pubkey(),
         program_id,
     )?;
 
@@ -241,7 +260,7 @@ pub fn stake<'a>(
     );
 
     let authority_signature = ProgramPubkeySignature::new(stake_pool, bump_seed);
-    let stake_user_account_state = if viewer_stake_account.data_is_empty() {
+    let stake_user_account_state = if viewer_stake_account.data_is_empty() {        
         // new stake
         let stake_user_account_state = ViewerStake {
             amount: input.amount,
@@ -290,11 +309,18 @@ pub fn stake<'a>(
     };
 
     // transfer amount from provided user token account into stake pool
+    let signer = if user_wallet.is_signer {
+        user_wallet
+    }
+    else {
+        stake_pool_owner.unwrap()
+    };
+
     invoke::spl_token_transfer(
         spl_token,
         token_account_source,
         token_account_stake_target,
-        stake_pool_owner,
+        signer,
         input.amount,
     )?;
     stake_user_account_state.serialize_const(&mut *viewer_stake_account.try_borrow_mut_data()?)?;
