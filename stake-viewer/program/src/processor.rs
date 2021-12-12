@@ -277,7 +277,7 @@ pub fn stake<'a>(
         // new stake
         let stake_user_account_state = ViewerStake {
             amount: input.amount,
-            owner: token_account_source.pubkey(),
+            owner: user_wallet.pubkey(),
             staked_until: clock.unix_timestamp + input.duration,
             version: StateVersion::V1,
             staked_at: clock.unix_timestamp,
@@ -310,9 +310,9 @@ pub fn stake<'a>(
         }
 
         ensure_owner!(
-            token_account_source,
+            user_wallet,
             stake_user_account_state,
-            errors::Error::UserTokenAccountMustBeOwnerOfStakeUserAccount
+            errors::Error::UserWalletMustBeOwnerOfViewerStakeAccount
         );
         stake_user_account_state.staked_until = clock.unix_timestamp + input.duration;
         // existing stake just adds on top
@@ -388,16 +388,26 @@ fn unstake<'a>(
     let user_stake_account_state = user_stake_account.deserialize::<ViewerStake>()?;
     user_stake_account_state.initialized()?;
 
-    is_derived(user_stake_account_state.owner, user_wallet)?;
+    ensure_derived!(
+        user_stake_account_state.owner, 
+        user_wallet,
+        errors::Error::UserWalletMustBeOwnerOfViewerStakeAccount
+    );
 
     let clock = Clock::from_account_info(sysvar_clock)?;
     if user_stake_account_state.staked_until > clock.unix_timestamp {
         return errors::Error::UnstakeCanBeDoneOnlyAfterStakeTimeLapsed.into();
     }
 
-    let (stake_authority_pubkey, bump_seed, token_account_stake_pubkey) =
+    let (stake_authority_pubkey, bump_seed, token_account_stake_source_pubkey) =
         derive_token_account(stake_pool, program_id)?;
-    is_derived(token_account_stake_pubkey, token_account_stake_source)?;
+
+
+    ensure_derived!(
+        token_account_stake_source_pubkey, 
+        token_account_stake_source,
+        errors::Error::StakePoolTokenAccountMustBeDerivedFromPool
+    );
 
     let (stake_account_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,

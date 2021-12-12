@@ -193,6 +193,19 @@ macro_rules! ensure_owner {
     };
 }
 
+/// ensure that statement is true, or return error
+#[macro_export]
+macro_rules! ensure {
+    (
+        $a:expr,
+        $error:path
+    ) => {
+        if !$a {
+            return Err($error.into())
+        }
+    };
+}
+
 #[macro_export]
 macro_rules! ensure_eq {
     (
@@ -213,7 +226,7 @@ macro_rules! ensure_derived {
         $related:expr,
         $error:path
     ) => {
-        if $relation != $related.pubkey() {
+        if $relation.pubkey() != $related.pubkey() {
             return Err($error.into())
         }
     };

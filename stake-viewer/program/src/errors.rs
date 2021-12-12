@@ -13,11 +13,12 @@ pub enum Error {
     StakeAuthorityMustBeDerivedFromStake,
     StakeTokenAccountMustBeDerivedFromStake,
     StakeUserMustBeDerivedFromUserToken,
-    UserTokenAccountMustBeOwnerOfStakeUserAccount,
+    UserWalletMustBeOwnerOfViewerStakeAccount,
     StakePoolMustBeOwnedByThisContract,
     StakeUserAccountMustBeOwnedByThisContract,
     StakeForViewerMustBeSignedByUserWalletOrPoolAdmin,
     AdminCanUnstakeOnlyToUserWalletAssosiatedTokenAddress,
+    StakePoolTokenAccountMustBeDerivedFromPool,
 }
 
 impl Error {

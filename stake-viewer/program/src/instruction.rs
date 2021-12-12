@@ -214,7 +214,7 @@ pub fn unstake(
 
 #[cfg(test)]
 mod tests {
-    use crate::{instruction::StakeInput, state::ViewerStake, types::Rank};
+    use crate::{types::Rank};
 
     use super::{InitializeStakePoolInput, Instruction};
     use borsh::*;

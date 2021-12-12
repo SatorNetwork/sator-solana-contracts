@@ -104,7 +104,7 @@ pub fn initialize_viewer(
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, BorshSchema, Default, Clone, Copy)]
 pub struct WinnerInput {
-    // user 
+    // user
     pub owner: Pubkey,
     pub points: u32,
 }
@@ -174,7 +174,7 @@ pub fn initialize_quiz(
 /// Creates [Instruction::Claim] wins on behalf of user. Transfers tokens from show account to user account, sets win claimed.
 ///
 /// Accounts:
-///  * `spl_token`          - 
+///  * `spl_token`          -
 ///  * `owner`              - *signer, payer* and owner of `show`.
 ///  * `show`               - used to validate `owner` and `quiz`
 ///  * `show_authority`     - *implicit* program derived account from `32 bytes show public key` based `program_id`.

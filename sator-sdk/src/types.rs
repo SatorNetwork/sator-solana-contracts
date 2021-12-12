@@ -12,6 +12,7 @@ pub type ApproximateSeconds = i64;
 pub type MintPubkey = Pubkey;
 pub type TokenAccountPubkey = Pubkey;
 pub type SignerPubkey = Pubkey;
+pub type PossiblySignerPubkey = Pubkey;
 pub type TokenAmount = u64;
 
 pub type Lamports = u64;

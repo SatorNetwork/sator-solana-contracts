@@ -1,4 +1,3 @@
-use std::io::{Read, Cursor};
 use sator_sdk::program::PubkeyPatterns;
 use sator_stake_viewer::{
     instruction::{InitializeStakePoolInput, StakeInput},
@@ -15,6 +14,7 @@ use solana_sdk::{
     system_instruction,
     transaction::Transaction,
 };
+use std::io::{Cursor, Read};
 
 #[derive(Debug, Default)]
 pub struct Options {
@@ -27,7 +27,7 @@ fn main() {
     let mut options: Options = Options::default();
     options.mint = false;
     options.all_exists = true;
-    let stake_pool_owner =  Keypair::new();
+    let stake_pool_owner = Keypair::new();
     if options.all_exists {
         let mut fee_payer = "[115, 91, 202, 172, 215, 254, 239, 102, 127, 239, 39, 117, 165, 14, 239, 60, 242, 138, 216, 4, 183, 230, 36, 122, 133, 128, 12, 201, 176, 200, 144, 182, 17, 64, 8, 222, 37, 225, 40, 90, 140, 94, 207, 194, 215, 172, 41, 156, 184, 231, 78, 111, 144, 102, 2, 211, 156, 35, 90, 19, 91, 13, 43, 209]".to_string();
         let mut fee_payer = std::io::Cursor::new(fee_payer);
@@ -36,12 +36,24 @@ fn main() {
         let rpc_client = RpcClient::new("https://api.devnet.solana.com".to_string());
         solana_logger::setup_with_default("solana=debug");
 
-        let stakepool: Pubkey = "CpMhtwfw4yMuL8Nk83zri4HyLnrtc19xXRzvzv6G4vRw".parse().unwrap();
-        let feee: Pubkey = "2ALZgMNre2qynTTyxWtgWG6L2L56n39aBGegS1yvxwya".parse().unwrap();
-        let stakeAuth: Pubkey = "7jq2SaaZEsCgaxYmmjiZqXJtdxwRNoRaWFLSTZPX2e5L".parse().unwrap();
-        let userWallett: Pubkey = "3juXiCWJwusUqDgN9T5oVjic5h4CmbueyHZ7B1oBWZEX".parse().unwrap();
-        let tokenAccountStakeTargett: Pubkey = "9sKWcvyXfuubEwgxnNGHUzsndCpoPRJzGL1KavPU29Vq".parse().unwrap();
-        let stakeAccountt: Pubkey = "7jq2SaaZEsCgaxYmmjiZqXJtdxwRNoRaWFLSTZPX2e5L".parse().unwrap();
+        let stakepool: Pubkey = "CpMhtwfw4yMuL8Nk83zri4HyLnrtc19xXRzvzv6G4vRw"
+            .parse()
+            .unwrap();
+        let feee: Pubkey = "2ALZgMNre2qynTTyxWtgWG6L2L56n39aBGegS1yvxwya"
+            .parse()
+            .unwrap();
+        let stakeAuth: Pubkey = "7jq2SaaZEsCgaxYmmjiZqXJtdxwRNoRaWFLSTZPX2e5L"
+            .parse()
+            .unwrap();
+        let userWallett: Pubkey = "3juXiCWJwusUqDgN9T5oVjic5h4CmbueyHZ7B1oBWZEX"
+            .parse()
+            .unwrap();
+        let tokenAccountStakeTargett: Pubkey = "9sKWcvyXfuubEwgxnNGHUzsndCpoPRJzGL1KavPU29Vq"
+            .parse()
+            .unwrap();
+        let stakeAccountt: Pubkey = "7jq2SaaZEsCgaxYmmjiZqXJtdxwRNoRaWFLSTZPX2e5L"
+            .parse()
+            .unwrap();
 
         let mut transaction = Transaction::new_with_payer(
             &[sator_stake_viewer::instruction::stake(
@@ -56,7 +68,7 @@ fn main() {
             )
             .unwrap()
             .0],
-            Some(&fee_payer.pubkey(),),
+            Some(&fee_payer.pubkey()),
         );
 
         let (recent_blockhash, fee_calculator) = rpc_client.get_recent_blockhash().unwrap();
@@ -72,7 +84,6 @@ fn main() {
             .unwrap();
 
         println!("stake {:?}", signature);
-
     } else {
         let fee_payer =
             solana_sdk::signature::read_keypair_file("/home/dz/validator-keypair.json".to_string())

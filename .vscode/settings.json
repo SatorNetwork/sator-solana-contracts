@@ -4,7 +4,9 @@
         "Borsh",
         "lamports",
         "Pubkey",
+        "restake",
         "Sator",
+        "sysvar",
         "unstake",
         "unstaked",
         "unstaking"

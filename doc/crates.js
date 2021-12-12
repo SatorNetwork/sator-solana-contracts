@@ -1,1 +1,0 @@
-window.ALL_CRATES = ["sator_reward","sator_stake_viewer"];

@@ -337,6 +337,7 @@ fn initialize_show<'a>(
         Show::LEN as u64,
         program_id,
         system_program,
+        spl_token_program,
     )?;
 
     let authority_signature = ProgramPubkeySignature::new(show, bump_seed);

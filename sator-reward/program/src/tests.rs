@@ -214,6 +214,7 @@ async fn flow() {
         .await
         .unwrap();
 
-    let account = get_token_account_state(&mut client.banks_client, &user_token_account.pubkey()).await;
+    let account =
+        get_token_account_state(&mut client.banks_client, &user_token_account.pubkey()).await;
     assert_eq!(account.amount, 666);
 }

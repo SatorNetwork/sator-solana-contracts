@@ -15,22 +15,23 @@ use super::{
 
 /// Creates system account externally signed
 pub fn create_account<'a>(
-    funder: AccountInfo<'a>,
+    fee_payer: AccountInfo<'a>,
     account_to_create: AccountInfo<'a>,
     required_lamports: u64,
     space: u64,
     owner: &ProgramPubkey,
     _system_program: &AccountInfo<'a>,
+    _spl_token_program: &AccountInfo<'a>,
 ) -> ProgramResult {
     invoke(
         &system_instruction::create_account(
-            &funder.key,
+            &fee_payer.key,
             &account_to_create.key,
             required_lamports,
             space,
             owner,
         ),
-        &[funder.clone(), account_to_create.clone()],
+        &[fee_payer.clone(), account_to_create.clone()],
     )
 }
 
@@ -54,6 +55,7 @@ pub fn create_account_signed<'a>(
         signers_seeds,
     )
 }
+
 
 pub struct ProgramPubkeySignature {
     bytes: [u8; 32],

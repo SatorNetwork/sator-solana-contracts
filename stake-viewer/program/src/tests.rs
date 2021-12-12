@@ -17,7 +17,7 @@ use sator_sdk_test::spl_transactions;
 
 use crate::{
     instruction::InitializeStakePoolInput, processor::process_instruction, stake_viewer_program_id,
-    state, transactions::initialize_stake_pool, types::Rank,
+    transactions::initialize_stake_pool, types::Rank,
 };
 
 pub fn new_program_test() -> ProgramTest {
@@ -116,7 +116,7 @@ async fn flow() {
         &stake_pool.pubkey(),
         &crate::stake_viewer_program_id(),
     );
-    let token_account = Pubkey::create_with_seed(
+    let stake_pool_token_account = Pubkey::create_with_seed(
         &stake_authority.0,
         "ViewerStakePool::token_account",
         &spl_token::id(),
@@ -124,7 +124,7 @@ async fn flow() {
     .unwrap();
 
     let token_account_state =
-        get_token_account_state(&mut client.banks_client, &token_account).await;
+        get_token_account_state(&mut client.banks_client, &stake_pool_token_account).await;
     assert_eq!(token_account_state.mint, mint.pubkey());
     let stake_state: ViewerStakePool = client
         .banks_client
@@ -139,7 +139,7 @@ async fn flow() {
     let transaction = spl_transactions::mint_to(
         &fee_payer,
         &mint.pubkey(),
-        &token_account,
+        &stake_pool_token_account,
         &stake_pool_owner,
         10000000000,
         client.last_blockhash,
@@ -155,7 +155,7 @@ async fn flow() {
     let (transaction, user_token_account) = spl_transactions::create_token_account(
         10000000,
         &mint.pubkey(),
-        &stake_pool_owner,
+        &user_wallet,
         &fee_payer,
         client.last_blockhash,
     );
@@ -183,9 +183,9 @@ async fn flow() {
 
     let stake_duration = hour;
     dbg!("Staking from user wallet");
-    let (transaction, stake_account) = transactions::stake(
+    let (transaction, viewer_stake_account) = transactions::stake(
         &fee_payer,
-        &stake_pool_owner,
+        &user_wallet,
         &stake_pool.pubkey(),
         &user_token_account.pubkey(),
         StakeInput {
@@ -203,26 +203,30 @@ async fn flow() {
 
     let user_token_account_state =
         get_token_account_state(&mut client.banks_client, &user_token_account.pubkey()).await;
-    let token_account_state =
-        get_token_account_state(&mut client.banks_client, &token_account).await;
 
-    let viewer_stake_account: ViewerStake = client
+    
+    assert_eq!(user_token_account_state.amount, 999000);
+    let stake_pool_token_account_state =
+        get_token_account_state(&mut client.banks_client, &stake_pool_token_account).await;
+    assert_eq!(stake_pool_token_account_state.amount, 10000001000);
+
+    let viewer_stake_account_state: ViewerStake = client
         .banks_client
-        .get_account_data_with_borsh(stake_account.pubkey())
+        .get_account_data_with_borsh(viewer_stake_account.pubkey())
         .await
         .unwrap();
     assert_eq!(
-        viewer_stake_account.staked_until - viewer_stake_account.staked_at,
+        viewer_stake_account_state.staked_until - viewer_stake_account_state.staked_at,
         stake_duration
     );
-    assert_eq!(viewer_stake_account.amount, 1000);
+    assert_eq!(viewer_stake_account_state.amount, 1000);
 
     dbg!("Unstaking from lock not yet possible");
     let transaction = transactions::unstake(
         &fee_payer,
         &stake_pool.pubkey(),
         &user_token_account.pubkey(),
-        &stake_pool_owner,
+        &user_wallet,
         client.last_blockhash,
     );
 
@@ -235,7 +239,7 @@ async fn flow() {
     dbg!("Staking more on existing stake");
     let (transaction, _) = transactions::stake(
         &fee_payer,
-        &stake_pool_owner,
+        &user_wallet,
         &stake_pool.pubkey(),
         &user_token_account.pubkey(),
         StakeInput {
@@ -251,17 +255,17 @@ async fn flow() {
         .await
         .unwrap();
 
-    let viewer_stake_account: ViewerStake = client
+    let viewer_stake_account_state: ViewerStake = client
         .banks_client
-        .get_account_data_with_borsh(stake_account.pubkey())
+        .get_account_data_with_borsh(viewer_stake_account.pubkey())
         .await
         .unwrap();
 
     assert_eq!(
-        viewer_stake_account.staked_until - viewer_stake_account.staked_at,
+        viewer_stake_account_state.staked_until - viewer_stake_account_state.staked_at,
         stake_duration
     );
-    assert_eq!(viewer_stake_account.amount, 3000);
+    assert_eq!(viewer_stake_account_state.amount, 3000);
 
     warp_seconds(&mut client, 5 * hour).await;
 
@@ -273,7 +277,7 @@ async fn flow() {
         &fee_payer,
         &stake_pool.pubkey(),
         &user_token_account.pubkey(),
-        &stake_pool_owner,
+        &user_wallet,
         client.last_blockhash,
     );
 
@@ -290,7 +294,7 @@ async fn flow() {
 
     client
         .banks_client
-        .get_account_data_with_borsh::<ViewerStake>(stake_account.pubkey())
+        .get_account_data_with_borsh::<ViewerStake>(viewer_stake_account.pubkey())
         .await
         .expect_err("account was burned");
 }

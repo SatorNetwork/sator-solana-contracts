@@ -1,12 +1,9 @@
-use borsh::BorshDeserialize;
 use solana_program::{program_pack::Pack, system_instruction};
 use solana_sdk::{
-    account::Account,
     pubkey::Pubkey,
     signature::{Keypair, Signer},
     transaction::Transaction,
 };
-use std::mem;
 
 use sator_sdk::{
     program::PubkeyPatterns,

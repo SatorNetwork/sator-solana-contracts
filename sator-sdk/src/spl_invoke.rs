@@ -2,17 +2,9 @@
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
-    program::{invoke, invoke_signed},
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    system_instruction,
+    program::{invoke,}, 
 };
 use spl_token::instruction::initialize_account;
-
-use super::{
-    program::{AccountPatterns, PubkeyPatterns},
-    types::ProgramPubkey,
-};
 
 /// Initialize token account
 pub fn initialize_token_account<'a>(
