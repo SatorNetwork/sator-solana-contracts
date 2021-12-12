@@ -87,18 +87,31 @@ pub fn process_instruction(
         Instruction::Unstake => {
             msg!("Instruction::Unstake");
             match accounts {
-                [clock, spl_token, fee_payer, stake_pool, stake_authority, token_account_user, token_account_stake_source, stake_account, stake_pool_owner, ..] => {
+                [
+                    sysvar_clock,
+                    spl_token,
+                    fee_payer,
+                    stake_pool,
+                    stake_authority,
+                    token_account_target,
+                    token_account_stake_source,
+                    user_stake_account,
+                    user_wallet,
+                    ..
+                ] => {
+                    let stake_pool_owner = accounts.get(9);
                     unstake(
                         program_id,
-                        clock,
-                        spl_token,
-                        fee_payer,
-                        stake_pool,
-                        stake_authority,
-                        token_account_user,
-                        token_account_stake_source,
-                        stake_account,
-                        stake_pool_owner,
+                        sysvar_clock,
+spl_token,
+fee_payer,
+stake_pool,
+stake_authority,
+token_account_target,
+token_account_stake_source,
+user_stake_account,
+user_wallet,
+stake_pool_owner,
                     )
                 }
                 _ => Err(ProgramError::NotEnoughAccountKeys),
@@ -334,15 +347,33 @@ fn unstake<'a>(
     fee_payer: &AccountInfo<'a>,
     stake_pool: &AccountInfo<'a>,
     stake_authority: &AccountInfo<'a>,
-    token_account_user: &AccountInfo<'a>,
+    token_account_target: &AccountInfo<'a>,
     token_account_stake_source: &AccountInfo<'a>,
     user_stake_account: &AccountInfo<'a>,
-    stake_pool_owner: &AccountInfo<'a>,
+    user_wallet: &AccountInfo<'a>,
+    stake_pool_owner: Option<&AccountInfo<'a>>,    
 ) -> ProgramResult {
-    stake_pool_owner.is_signer()?;
-
     let viewer_stake_pool_state = stake_pool.deserialize::<ViewerStakePool>()?;
     viewer_stake_pool_state.initialized()?;
+
+    if let Some(stake_pool_owner) = stake_pool_owner {
+        stake_pool_owner.is_signer()?;
+        ensure_owner!(
+            stake_pool_owner,
+            viewer_stake_pool_state,
+            errors::Error::StakePoolOwnerMustOwnStake
+        );
+        let borrow = token_account_target.try_borrow_data().unwrap();
+        let token_account_data = spl_token::state::Account::unpack(&borrow)?;
+        let associated_token_address = spl_associated_token_account::get_associated_token_address(&user_wallet.pubkey(), &token_account_data.mint);
+        if associated_token_address != token_account_target.pubkey() {
+            return errors::Error::AdminCanUnstakeOnlyToUserWalletAssosiatedTokenAddress.into();
+        }
+    }
+    else {
+        user_wallet.is_signer()?;
+    }
+
     ensure_eq!(
         program_id,
         stake_pool.owner,
@@ -352,18 +383,12 @@ fn unstake<'a>(
         program_id,
         user_stake_account.owner,
         errors::Error::StakeUserAccountMustBeOwnedByThisContract
-    );
-
-    ensure_owner!(
-        stake_pool_owner,
-        viewer_stake_pool_state,
-        errors::Error::StakePoolOwnerMustOwnStake
-    );
+    );    
 
     let user_stake_account_state = user_stake_account.deserialize::<ViewerStake>()?;
     user_stake_account_state.initialized()?;
 
-    is_derived(user_stake_account_state.owner, token_account_user)?;
+    is_derived(user_stake_account_state.owner, user_wallet)?;
 
     let clock = Clock::from_account_info(sysvar_clock)?;
     if user_stake_account_state.staked_until > clock.unix_timestamp {
@@ -376,7 +401,7 @@ fn unstake<'a>(
 
     let (stake_account_pubkey, _) = Pubkey::create_with_seed_for_pubkey(
         &stake_authority_pubkey,
-        &token_account_user.pubkey(),
+        &user_wallet.pubkey(),
         program_id,
     )?;
 
@@ -388,7 +413,7 @@ fn unstake<'a>(
     invoke::spl_token_transfer_signed(
         spl_token,
         token_account_stake_source,
-        token_account_user,
+        token_account_target,
         stake_authority,
         user_stake_account_state.amount,
         &authority_signature,
