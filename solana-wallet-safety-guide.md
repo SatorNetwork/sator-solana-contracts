@@ -22,7 +22,7 @@ When your need some tokens or SOL for operations, transfer them to Hot wallet av
 
 Export and encrypt Hot Wallet, share storage with people your trust. 
 
-Consider to use CLI tools which allows at least N of M people your shared encrypted wallet to decrypt to get access.
+Consider to use CLI tools which allows at least N of M people your shared encrypted wallet to decrypt to get access. 
 
 ### Wrapped wSOL and multisignature tokens
 
@@ -48,6 +48,13 @@ Harwware wallets may be good with `Wrapped wSOL and multisignature tokens`.
 
 Probably your hardware producer is not open source and does not revela if it uses N of M signatures or governance process to reproduce your hadware wallet.
 
+## New Cold Wallet
+
+If you thin wallet was compromised, create new Cold Wallet. 
+
+Hackers may wait long before use keys. 
+
+Never share screen while operating on private keys visuall. If that heppend, create new Cold Wallet.
 
 ## Contracts
 
