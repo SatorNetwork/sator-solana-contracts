@@ -57,7 +57,8 @@ Check list if you share money with contracts:
 - program is sealed and immutable
 - program is open source with high score of being mature (mature team, long commit history, many tests, etc)
 - program is audited by third party
-- you personally deployed program 
-- program uses multisignature deploys if mutable
+- you personally deployed program or person you trust
+- program uses multisignature deploy if mutable
 - you tested program on small amounts
+- program has reproducible builds, you downloaded program from solana, built it locally, and hashes of both match 
 
