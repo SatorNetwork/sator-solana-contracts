@@ -12,7 +12,7 @@ There are several ways to make signatures secure.
 
 Use cold device (not your day to day driver) just to create Solana wallet. 
 
-Run ecnryption on that device. Android, Windows, Mac - all can encrypt.
+Run full encryption on that device. Android, Windows, Mac - all can encrypt.
 
 Use open source wallets which cannot restore your keys anyhow.
 
