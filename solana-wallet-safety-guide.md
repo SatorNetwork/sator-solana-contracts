@@ -14,13 +14,13 @@ Use cold device (not your day to day driver) just to create Solana wallet.
 
 Run ecnryption on that device. Android, Windows, Mac - all can encrypt.
 
-Use only open source wallets which cannot restore your keys anyhow.
+Use open source wallets which cannot restore your keys anyhow.
 
 Prefer console wallet.
 
 When your need some tokens or SOL for operations, transfer them to Hot wallet available on your work device.
 
-Export and encrypt Hot Wallet, share storage with people your trust. 
+Encrypt and export `Cold Wallet`, share storage with people your trust. Make sure that at leas on of them tried to use wallet on cold device too.
 
 Consider to use CLI tools which allows at least N of M people your shared encrypted wallet to decrypt to get access. 
 
