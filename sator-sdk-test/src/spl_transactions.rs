@@ -76,6 +76,7 @@ pub fn create_initialize_mint(
 
     transaction
 }
+
 pub fn mint_to(
     payer: &Keypair,
     mint: &MintPubkey,
